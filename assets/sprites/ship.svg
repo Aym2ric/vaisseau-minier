@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 44">
+  <!-- Aile haut (orange, derrière le corps) -->
+  <polygon points="16,14 6,2 2,6 8,17"
+    fill="#ff9a3c" stroke="#120b0a" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Aile bas (orange, derrière le corps) -->
+  <polygon points="16,30 8,27 2,38 6,42"
+    fill="#ff9a3c" stroke="#120b0a" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Canon (jaune) -->
+  <rect x="32" y="18" width="14" height="8"
+    fill="#ffd166" stroke="#120b0a" stroke-width="2" rx="1"/>
+  <!-- Corps (crème) -->
+  <polygon points="42,22 34,14 22,11 6,13 6,31 22,33 34,30"
+    fill="#f4e3c1" stroke="#120b0a" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Cockpit (bleu) -->
+  <circle cx="25" cy="22" r="6"
+    fill="#bfe6ff" stroke="#120b0a" stroke-width="2.5"/>
+  <!-- Reflet -->
+  <circle cx="23" cy="20" r="1.8" fill="white"/>
+</svg>

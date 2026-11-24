@@ -41,6 +41,7 @@ func _behave(delta: float) -> void:
 			if state_time <= 0.0:
 				state = State.AIM
 				state_time = 1.0
+	rotation = aim_angle
 
 
 func _on_contact() -> void:
@@ -48,15 +49,8 @@ func _on_contact() -> void:
 
 
 func _draw() -> void:
-	draw_shadow()
+	# Seule la ligne de visée reste dessinée — le corps est le Sprite2D.
+	# Le node est déjà tourné selon aim_angle, donc Vector2.RIGHT = direction de visée.
 	if state == State.AIM:
 		var warn := Color(1.0, 0.35, 0.37, 0.3 + 0.3 * sin(_time * 20.0))
-		draw_dashed_line(Vector2.ZERO, Vector2.RIGHT.rotated(aim_angle) * 300.0, warn, 3.0, 8.0)
-	var spikes := PackedVector2Array()
-	for i in 10:
-		var r := radius if i % 2 == 1 else radius + 7.0
-		spikes.append(Vector2.RIGHT.rotated(aim_angle + TAU * i / 10.0) * r)
-	DrawUtils.polygon(self, spikes, body_color(Color("ff9a3c")))
-	var eye := Vector2.RIGHT.rotated(aim_angle)
-	DrawUtils.circle(self, eye * 4.0, 4.0, Color.WHITE, 2.0)
-	draw_circle(eye * 5.5, 1.8, DrawUtils.OUTLINE)
+		draw_dashed_line(Vector2.ZERO, Vector2.RIGHT * 300.0, warn, 3.0, 8.0)

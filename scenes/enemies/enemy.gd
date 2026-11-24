@@ -32,11 +32,7 @@ func setup(sector_number: int) -> void:
 func _ready() -> void:
 	collision_layer = GameData.LAYER_ENEMIES
 	collision_mask = GameData.LAYER_PLAYER
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = radius
-	shape.shape = circle
-	add_child(shape)
+	($CollisionShape2D.shape as CircleShape2D).radius = radius
 
 
 func _physics_process(delta: float) -> void:
@@ -49,6 +45,10 @@ func _physics_process(delta: float) -> void:
 		if body is Ship:
 			(body as Ship).take_damage(contact_damage)
 			_on_contact()
+	# Flash blanc sur coup reçu via modulate du Sprite2D
+	var sprite := get_node_or_null("Sprite2D")
+	if sprite:
+		sprite.modulate = Color(2.0, 2.0, 2.0) if flash > 0.0 else Color.WHITE
 	queue_redraw()
 
 
@@ -75,9 +75,3 @@ func on_screen() -> bool:
 	return Rect2(Vector2.ZERO, GameData.ARENA).has_point(position)
 
 
-func draw_shadow() -> void:
-	draw_colored_polygon(DrawUtils.ellipse_points(Vector2(4, 8), radius, radius * 0.5), DrawUtils.SHADOW)
-
-
-func body_color(base: Color) -> Color:
-	return Color.WHITE if flash > 0.0 else base

@@ -31,11 +31,7 @@ func setup(rock_kind: String, sector_number: int) -> void:
 func _ready() -> void:
 	collision_layer = GameData.LAYER_ROCKS
 	collision_mask = 0
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = radius
-	shape.shape = circle
-	add_child(shape)
+	($CollisionShape2D.shape as CircleShape2D).radius = radius
 	for i in 9:
 		var a := TAU * i / 9.0
 		_points.append(Vector2(cos(a), sin(a)) * radius * randf_range(0.88, 1.12))

@@ -10,17 +10,15 @@ var life := 18.0
 var target: Ship
 var effects: Node2D
 var _taken := false
+var _full_warned := false
 
 
 func _ready() -> void:
 	collision_layer = 0
 	collision_mask = GameData.LAYER_PLAYER
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = 9.0
-	shape.shape = circle
-	add_child(shape)
 	body_entered.connect(_on_body)
+	var res: Dictionary = GameData.RESOURCES[resource_id]
+	$Sprite2D.modulate = Color("ffc53d") if golden else res["color"]
 
 
 func _physics_process(delta: float) -> void:
@@ -31,7 +29,7 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(target):
 		var to := target.position - position
 		var dist := to.length()
-		var magnet := float(GameData.CONFIG["magnet_radius"]) * (1.0 + 0.3 * SaveGame.skill("magnet"))
+		var magnet := float(GameData.CONFIG["magnet_radius"]) * (1.0 + 0.3 * SaveGame.skill("magnet")) * (1.0 + 0.5 * RunState.run_upgrade_level("magnet"))
 		if dist < magnet and dist > 0.1:
 			velocity += to / dist * (900.0 * (1.0 - dist / magnet) + 200.0) * delta
 	velocity *= exp(-2.5 * delta)
@@ -44,6 +42,11 @@ func _physics_process(delta: float) -> void:
 func _on_body(body: Node) -> void:
 	if _taken or not (body is Ship):
 		return
+	if RunState.cargo_full():
+		if effects and not _full_warned:
+			_full_warned = true
+			FloatText.spawn(effects, position + Vector2(0, -18), "SOUTE PLEINE", Color("ff5a5f"))
+		return
 	_taken = true
 	RunState.add_resource(resource_id, amount)
 	var res: Dictionary = GameData.RESOURCES[resource_id]
@@ -52,10 +55,3 @@ func _on_body(body: Node) -> void:
 	queue_free()
 
 
-func _draw() -> void:
-	var res: Dictionary = GameData.RESOURCES[resource_id]
-	var s := 9.0 if golden else 7.0
-	var color: Color = res["color"]
-	if golden:
-		color = Color("ffc53d")
-	DrawUtils.polygon(self, PackedVector2Array([Vector2(0, -s), Vector2(s, 0), Vector2(0, s), Vector2(-s, 0)]), color, 2.5)

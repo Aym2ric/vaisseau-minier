@@ -13,12 +13,15 @@ var _hull_bar: ProgressBar
 var _threat_label: Label
 var _cargo_label: Label
 var _quota_bar: ProgressBar
+var _xp_bar: ProgressBar
 var _announce: Label
 var _announce_time := 0.0
 var _panel: PanelContainer
 var _panel_title: Label
 var _panel_body: Label
-var _panel_buttons: HBoxContainer
+var _panel_buttons: VBoxContainer
+var _station_on_continue: Callable
+var _station_on_home: Callable
 
 
 func _ready() -> void:
@@ -43,23 +46,34 @@ func _ready() -> void:
 	_threat_label = _chip(top)
 	_cargo_label = _chip(top)
 
-	_quota_bar = _bar(ACCENT, Vector2(936, 10))
+	var vp: Vector2 = get_viewport().get_visible_rect().size
+
+	_quota_bar = _bar(ACCENT, Vector2(vp.x - 24.0, 7))
 	_quota_bar.position = Vector2(12, 52)
 	root.add_child(_quota_bar)
+
+	_xp_bar = _bar(Color("5b9bd5"), Vector2(vp.x - 24.0, 5))
+	_xp_bar.position = Vector2(12, 62)
+	root.add_child(_xp_bar)
 
 	_announce = Label.new()
 	_style_label(_announce, 26, INK)
 	_announce.add_theme_constant_override("outline_size", 8)
 	_announce.add_theme_color_override("font_outline_color", DrawUtils.OUTLINE)
 	_announce.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_announce.position = Vector2(0, 76)
-	_announce.size = Vector2(960, 40)
+	_announce.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_announce.offset_top = 82
+	_announce.offset_bottom = 122
 	root.add_child(_announce)
 
 	_panel = PanelContainer.new()
 	_panel.add_theme_stylebox_override("panel", _box(PANEL, 20))
-	_panel.custom_minimum_size = Vector2(520, 0)
-	_panel.position = Vector2(220, 150)
+	_panel.custom_minimum_size = Vector2(620, 0)
+	_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_panel.offset_left = -310
+	_panel.offset_right = 310
+	_panel.offset_top = -200
+	_panel.offset_bottom = 200
 	_panel.visible = false
 	root.add_child(_panel)
 	var column := VBoxContainer.new()
@@ -69,24 +83,29 @@ func _ready() -> void:
 	_style_label(_panel_title, 28, ACCENT)
 	column.add_child(_panel_title)
 	_panel_body = Label.new()
-	_style_label(_panel_body, 16, INK)
+	_style_label(_panel_body, 15, INK)
 	_panel_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_panel_body.custom_minimum_size = Vector2(480, 0)
+	_panel_body.custom_minimum_size = Vector2(580, 0)
 	column.add_child(_panel_body)
-	_panel_buttons = HBoxContainer.new()
-	_panel_buttons.add_theme_constant_override("separation", 10)
+	_panel_buttons = VBoxContainer.new()
+	_panel_buttons.add_theme_constant_override("separation", 8)
 	column.add_child(_panel_buttons)
 
 
 func _process(delta: float) -> void:
 	var planet := RunState.planet()
-	_status.text = "%s · secteur %d · ×%s" % [planet["name"], RunState.sector, str(RunState.mult)]
+	_status.text = "%s · secteur %d · ×%s · niv.%d" % [planet["name"], RunState.sector, str(RunState.mult), RunState.level]
 	_hull_bar.max_value = RunState.max_hull
 	_hull_bar.value = RunState.hull
 	_threat_label.text = "Menace niv. %d" % (int(RunState.threat / 20.0) + 1)
-	_cargo_label.text = "Soute : %s" % RunState.cargo_text()
+	var ratio := RunState.cargo_ratio()
+	var cargo_color := Color("ff5a5f") if ratio >= 1.5 else (ACCENT if ratio > 1.0 else INK)
+	_cargo_label.add_theme_color_override("font_color", cargo_color)
+	_cargo_label.text = "Soute %d/%d : %s" % [RunState.cargo_weight(), RunState.cargo_cap(), RunState.cargo_text()]
 	_quota_bar.max_value = RunState.quota
 	_quota_bar.value = mini(RunState.sector_got, RunState.quota)
+	_xp_bar.max_value = RunState.xp_to_next
+	_xp_bar.value = RunState.xp
 	_announce_time -= delta
 	_announce.modulate.a = clampf(_announce_time * 2.0, 0.0, 1.0)
 
@@ -96,24 +115,117 @@ func announce(text: String) -> void:
 	_announce_time = 2.4
 
 
-## Affiche un panneau avec des boutons : options = [["Texte", callable], ...].
+## Affiche un panneau avec des boutons.
+## options = [["Texte", callable], ...] ou [["Texte", callable, Color], ...] pour couleur custom.
 func show_panel(title: String, body: String, options: Array) -> void:
 	_panel_title.text = title
 	_panel_body.text = body
 	for child in _panel_buttons.get_children():
 		child.queue_free()
 	for option in options:
+		var bg := Color(option[2]) if option.size() > 2 else Color("4a302a")
 		var button := Button.new()
 		button.text = option[0]
-		button.custom_minimum_size = Vector2(0, 44)
-		button.add_theme_font_size_override("font_size", 16)
-		button.add_theme_stylebox_override("normal", _box(Color("4a302a"), 12))
-		button.add_theme_stylebox_override("hover", _box(Color("5a3a30"), 12))
+		button.custom_minimum_size = Vector2(0, 46)
+		button.add_theme_font_size_override("font_size", 15)
+		button.add_theme_stylebox_override("normal", _box(bg, 12))
+		button.add_theme_stylebox_override("hover", _box(bg.lerp(Color.WHITE, 0.1), 12))
 		button.add_theme_stylebox_override("pressed", _box(ACCENT, 12))
 		button.pressed.connect(option[1])
 		_panel_buttons.add_child(button)
 	_panel.visible = true
 	_panel.reset_size()
+
+
+## Panneau de station commerciale : vente à mi-run depuis le cargo actif.
+func show_station_market(on_continue: Callable, on_home: Callable) -> void:
+	_station_on_continue = on_continue
+	_station_on_home = on_home
+	_rebuild_station_panel()
+
+
+func _rebuild_station_panel() -> void:
+	_panel_title.text = "Station commerciale"
+	for child in _panel_buttons.get_children():
+		child.queue_free()
+
+	var cargo: Dictionary = RunState.cargo
+	var has_items := false
+	for id in cargo:
+		var qty: int = int(cargo.get(id, 0))
+		if qty <= 0 or not GameData.RESOURCES.has(id):
+			continue
+		has_items = true
+		var res: Dictionary = GameData.RESOURCES[id]
+		var price := qty * int(res["base"])
+
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		_panel_buttons.add_child(row)
+
+		var name_lbl := Label.new()
+		_style_label(name_lbl, 14, INK)
+		name_lbl.text = "%s ×%d  →  %d cr" % [res["name"], qty, price]
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(name_lbl)
+
+		var sell_id: String = id
+		var btn := Button.new()
+		btn.text = "Vendre"
+		btn.custom_minimum_size = Vector2(100, 34)
+		btn.add_theme_font_size_override("font_size", 13)
+		btn.add_theme_stylebox_override("normal", _box(Color("1a3020"), 10))
+		btn.add_theme_stylebox_override("hover", _box(Color("2a4030"), 10))
+		btn.pressed.connect(func() -> void: _station_sell(sell_id))
+		row.add_child(btn)
+
+	if not has_items:
+		var empty := Label.new()
+		_style_label(empty, 14, MUTED)
+		empty.text = "Cargo vide — rien à vendre."
+		_panel_buttons.add_child(empty)
+
+	var sep := Control.new()
+	sep.custom_minimum_size = Vector2(0, 4)
+	_panel_buttons.add_child(sep)
+
+	var nav := HBoxContainer.new()
+	nav.add_theme_constant_override("separation", 8)
+	_panel_buttons.add_child(nav)
+
+	var btn_cont := Button.new()
+	btn_cont.text = "Continuer la run →"
+	btn_cont.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_cont.custom_minimum_size = Vector2(0, 44)
+	btn_cont.add_theme_font_size_override("font_size", 15)
+	btn_cont.add_theme_stylebox_override("normal", _box(Color("4a302a"), 12))
+	btn_cont.add_theme_stylebox_override("hover", _box(Color("5a3a30"), 12))
+	btn_cont.pressed.connect(_station_on_continue)
+	nav.add_child(btn_cont)
+
+	var btn_home := Button.new()
+	btn_home.text = "Rentrer au vaisseau"
+	btn_home.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_home.custom_minimum_size = Vector2(0, 44)
+	btn_home.add_theme_font_size_override("font_size", 15)
+	btn_home.add_theme_stylebox_override("normal", _box(Color("2a2a1a"), 12))
+	btn_home.add_theme_stylebox_override("hover", _box(Color("3a3a2a"), 12))
+	btn_home.pressed.connect(_station_on_home)
+	nav.add_child(btn_home)
+
+	_panel_body.text = "Revendez vos ressources en cours de route.\nLes crédits seront encaissés à votre retour."
+	_panel.visible = true
+	_panel.reset_size()
+
+
+func _station_sell(id: String) -> void:
+	var qty: int = int(RunState.cargo.get(id, 0))
+	if qty <= 0:
+		return
+	var price := qty * int(GameData.RESOURCES[id]["base"])
+	RunState.cargo.erase(id)
+	RunState.add_credits(price)
+	call_deferred("_rebuild_station_panel")
 
 
 func hide_panel() -> void:

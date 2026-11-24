@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 10">
+  <!-- Rect(-8,-3, 16,6) centré à (10,5) -->
+  <rect x="2" y="2" width="16" height="6"
+    fill="#ffd166" stroke="#120b0a" stroke-width="2" rx="1.5"/>
+</svg>

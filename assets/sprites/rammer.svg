@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+  <!-- Étoile à pics (orange) — aim_angle=0, alternance r=22/r=15 sur 10 branches -->
+  <polygon points="46,24 36.1,32.8 30.8,44.9 19.4,38.3 6.2,36.9 9,24 6.2,11.1 19.4,9.7 30.8,3.1 36.1,15.2"
+    fill="#ff9a3c" stroke="#120b0a" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Oeil -->
+  <circle cx="28" cy="24" r="4"
+    fill="white" stroke="#120b0a" stroke-width="2"/>
+  <circle cx="29.5" cy="24" r="1.8" fill="#120b0a"/>
+</svg>

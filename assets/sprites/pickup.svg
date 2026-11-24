@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+  <!-- Diamant — couleur blanche, teintée via modulate en GDScript selon la ressource -->
+  <polygon points="10,2 18,10 10,18 2,10"
+    fill="white" stroke="#120b0a" stroke-width="2.5" stroke-linejoin="round"/>
+</svg>

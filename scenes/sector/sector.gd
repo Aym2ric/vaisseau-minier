@@ -1,8 +1,15 @@
 class_name Sector
 extends Node2D
 ## Un secteur d'une run : roches, ennemis, menace, événements, quota et balise d'extraction.
-## Tout est créé par code pour l'instant ; les éléments pourront devenir des scènes .tscn
-## quand la direction artistique remplacera les dessins provisoires par des sprites.
+
+const _SHIP_SCENE    = preload("res://scenes/ship/ship.tscn")
+const _ROCK_SCENE    = preload("res://scenes/world/rock.tscn")
+const _PICKUP_SCENE  = preload("res://scenes/world/pickup.tscn")
+const _ENEMY_SCENES  = {
+	"mite":   preload("res://scenes/enemies/mite.tscn"),
+	"gunner": preload("res://scenes/enemies/gunner.tscn"),
+	"rammer": preload("res://scenes/enemies/rammer.tscn"),
+}
 
 signal cleared
 signal announced(text: String)
@@ -26,6 +33,7 @@ var beacon_progress := 0.0
 var shake := 0.0
 var _time := 0.0
 var _decor: Array[Rect2] = []
+var _boss_alive := 0
 
 
 func _ready() -> void:
@@ -33,7 +41,7 @@ func _ready() -> void:
 	rocks = _layer("Roches")
 	pickups = _layer("Butin")
 	enemies = _layer("Ennemis")
-	ship = Ship.new()
+	ship = _SHIP_SCENE.instantiate()
 	ship.position = GameData.ARENA * Vector2(0.5, 0.7)
 	add_child(ship)
 	projectiles = _layer("Tirs")
@@ -41,11 +49,13 @@ func _ready() -> void:
 	ship.projectiles = projectiles
 	ship.damaged.connect(_on_ship_damaged)
 	_build_walls()
-	for i in int(GameData.CONFIG["rocks"]):
+	for i in int(round(float(GameData.CONFIG["rocks"]) * RunState.sector_rock_mult())):
 		spawn_rock()
 	for i in 26:
 		_decor.append(Rect2(randf() * GameData.ARENA.x, randf() * GameData.ARENA.y, randf_range(20, 70), randf_range(10, 30)))
 	event_timer = randf_range(8.0, 12.0)
+	if RunState.sector % 3 == 0:
+		_spawn_boss_wave()
 
 
 func _layer(layer_name: String) -> Node2D:
@@ -79,7 +89,7 @@ func _build_walls() -> void:
 func _physics_process(delta: float) -> void:
 	_time += delta
 	var step := float(GameData.CONFIG["threat_step"])
-	RunState.threat += delta * float(GameData.CONFIG["threat_rate"]) * (1.0 + step * (RunState.sector - 1))
+	RunState.threat += delta * float(GameData.CONFIG["threat_rate"]) * (1.0 + step * (RunState.sector - 1)) * RunState.sector_threat_mult()
 
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
@@ -92,7 +102,7 @@ func _physics_process(delta: float) -> void:
 		event_timer = randf_range(GameData.CONFIG["event_min"], GameData.CONFIG["event_max"])
 
 	rock_timer -= delta
-	if rock_timer <= 0.0 and rocks.get_child_count() < int(GameData.CONFIG["rocks"]):
+	if rock_timer <= 0.0 and rocks.get_child_count() < int(round(float(GameData.CONFIG["rocks"]) * RunState.sector_rock_mult())):
 		rock_timer = 1.5
 		spawn_rock()
 
@@ -114,7 +124,7 @@ func threat_level() -> int:
 func spawn_rock(kind: String = "", at: Variant = null) -> void:
 	if kind == "":
 		kind = _pick_weighted(GameData.ROCKS)
-	var rock := Rock.new()
+	var rock: Rock = _ROCK_SCENE.instantiate()
 	rock.setup(kind, RunState.sector)
 	rock.position = at if at != null else _free_spot(rock.radius)
 	rock.destroyed.connect(_on_rock_destroyed)
@@ -152,9 +162,20 @@ func _on_rock_destroyed(rock: Rock) -> void:
 	var def: Dictionary = GameData.ROCKS[rock.kind]
 	Burst.spawn(effects, rock.position, rock.fill_color(), 40.0, 8)
 	match rock.kind:
-		"ore", "gold":
-			var total := int(round(3.0 * RunState.mult * (4.0 if rock.kind == "gold" else 1.0)))
-			_drop(rock.position, planet["res"], maxi(1, total), rock.kind == "gold")
+		"ore":
+			var rare_id: String = String(planet.get("rare", ""))
+			var is_rare := rare_id != "" and randf() < 0.2
+			var res_id := rare_id if is_rare else String(planet["res"])
+			var total := int(round(3.0 * RunState.mult))
+			_drop(rock.position, res_id, maxi(1, total), is_rare)
+			RunState.add_quota(maxi(1, total), is_rare)
+		"gold":
+			var rare_id: String = String(planet.get("rare", ""))
+			var is_rare := rare_id != ""
+			var res_id := rare_id if is_rare else String(planet["res"])
+			var total := int(round(3.0 * RunState.mult * 4.0))
+			_drop(rock.position, res_id, maxi(1, total), is_rare)
+			RunState.add_quota(maxi(1, total), is_rare)
 		"hard":
 			_credits(rock.position, int(round(4.0 * RunState.mult)))
 		"chest":
@@ -164,8 +185,7 @@ func _on_rock_destroyed(rock: Rock) -> void:
 		"repair":
 			RunState.heal(12.0)
 			FloatText.spawn(effects, rock.position + Vector2(0, -20), "+12 coque", Color("8fd35f"))
-	# XP : prévu au jalon 2 (montées de niveau), valeur dans GameData.ROCKS[...]["xp"].
-	var _xp: int = def["xp"]
+	RunState.add_xp(int(def["xp"]))
 
 
 func _drop(at: Vector2, resource_id: String, total: int, golden: bool) -> void:
@@ -176,7 +196,7 @@ func _drop(at: Vector2, resource_id: String, total: int, golden: bool) -> void:
 		left -= amount
 		if amount <= 0:
 			continue
-		var p := Pickup.new()
+		var p: Pickup = _PICKUP_SCENE.instantiate()
 		p.resource_id = resource_id
 		p.amount = amount
 		p.golden = golden
@@ -195,14 +215,7 @@ func _credits(at: Vector2, amount: int) -> void:
 # --- Ennemis et événements -------------------------------------------------
 
 func spawn_enemy(kind: String, at: Variant = null) -> void:
-	var enemy: Enemy
-	match kind:
-		"gunner":
-			enemy = Gunner.new()
-		"rammer":
-			enemy = Rammer.new()
-		_:
-			enemy = Mite.new()
+	var enemy: Enemy = _ENEMY_SCENES[kind].instantiate()
 	enemy.setup(RunState.sector)
 	enemy.position = at if at != null else _edge_point()
 	enemy.target = ship
@@ -259,8 +272,44 @@ func _spawn_event() -> void:
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
-	_credits(enemy.position, maxi(1, int(round(enemy.credits * RunState.mult))))
+	_credits(enemy.position, maxi(1, int(round(enemy.credits * RunState.mult * RunState.sector_credits_mult()))))
 	Burst.spawn(effects, enemy.position, Color("ff5a5f"), 30.0, 6)
+	RunState.add_xp(enemy.xp * (2 if RunState.sector_type == "pirate" else 1))
+
+
+func _spawn_boss_wave() -> void:
+	var tier := RunState.sector / 3
+	announced.emit("⚠ Secteur Gardien — défais le gardien avant d'extraire !")
+	for i in tier:
+		var boss: Enemy = _ENEMY_SCENES["rammer"].instantiate()
+		boss.setup(RunState.sector)
+		boss.hp *= 3.0
+		boss.xp = 40
+		boss.credits = boss.credits * 3
+		boss.position = Vector2(GameData.ARENA.x * 0.5 + (i - tier / 2.0) * 80.0, -20.0)
+		boss.target = ship
+		boss.shots = projectiles
+		boss.died.connect(_on_boss_enemy_died)
+		boss.died.connect(_on_enemy_died)
+		enemies.add_child(boss)
+		_boss_alive += 1
+	for i in (tier + 1):
+		var escort: Enemy = _ENEMY_SCENES["gunner"].instantiate()
+		escort.setup(RunState.sector)
+		escort.position = _edge_point()
+		escort.target = ship
+		escort.shots = projectiles
+		escort.died.connect(_on_boss_enemy_died)
+		escort.died.connect(_on_enemy_died)
+		enemies.add_child(escort)
+		_boss_alive += 1
+
+
+func _on_boss_enemy_died(_enemy: Enemy) -> void:
+	_boss_alive -= 1
+	if _boss_alive <= 0:
+		announced.emit("Gardien vaincu !")
+		RunState.add_xp(10)
 
 
 func _on_ship_damaged() -> void:
@@ -271,7 +320,7 @@ func _on_ship_damaged() -> void:
 # --- Extraction ------------------------------------------------------------
 
 func _update_beacon(delta: float) -> void:
-	if not beacon_active and RunState.quota_reached():
+	if not beacon_active and RunState.quota_reached() and _boss_alive <= 0:
 		beacon_active = true
 		beacon_position = _free_spot(BEACON_RADIUS)
 		announced.emit("Quota atteint : rejoins la balise d'extraction !")

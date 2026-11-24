@@ -11,11 +11,6 @@ var _spent := false
 func _ready() -> void:
 	collision_layer = 0
 	collision_mask = GameData.LAYER_ROCKS | GameData.LAYER_ENEMIES | GameData.LAYER_WALLS
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = 4.0
-	shape.shape = circle
-	add_child(shape)
 	body_entered.connect(_on_hit)
 	area_entered.connect(_on_hit)
 	rotation = velocity.angle()
@@ -37,5 +32,3 @@ func _on_hit(target: Node) -> void:
 	queue_free()
 
 
-func _draw() -> void:
-	DrawUtils.rect(self, Rect2(-8, -3, 16, 6), Color("ffd166"))

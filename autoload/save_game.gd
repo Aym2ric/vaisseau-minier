@@ -19,7 +19,7 @@ func default_data() -> Dictionary:
 		"boss_killed": {},
 		"found": {"fer": true},   # ressources déjà découvertes
 		"weapons": {"blaster": true},
-		"equipped": "blaster",
+		"equipped": {"weapon": "blaster"},
 		"selected_planet": "roc",
 		"options": {"control_mode": "free", "auto_fire": false},
 		"history": [],
@@ -36,6 +36,9 @@ func load_game() -> void:
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	if parsed is Dictionary:
 		data.merge(parsed, true)
+	# Migration : ancien format "equipped" = String → {"weapon": String}
+	if data["equipped"] is String:
+		data["equipped"] = {"weapon": String(data["equipped"])}
 
 
 func save_game() -> void:

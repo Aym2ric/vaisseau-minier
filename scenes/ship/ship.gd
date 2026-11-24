@@ -20,12 +20,13 @@ func _ready() -> void:
 	collision_layer = GameData.LAYER_PLAYER
 	collision_mask = GameData.LAYER_ROCKS | GameData.LAYER_WALLS
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
-	var shape := CollisionShape2D.new()
-	var circle := CircleShape2D.new()
-	circle.radius = RADIUS
-	shape.shape = circle
-	add_child(shape)
-	weapon = Blaster.new()
+	var weapon_id: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
+	if weapon_id == "laser":
+		weapon = Laser.new()
+	elif weapon_id == "launcher":
+		weapon = Launcher.new()
+	else:
+		weapon = Blaster.new()
 	weapon.ship = self
 	add_child(weapon)
 	rotation = -PI / 2.0
@@ -46,7 +47,8 @@ func _physics_process(delta: float) -> void:
 
 	var planet := RunState.planet()
 	var friction: float = planet["friction"]
-	var max_speed: float = float(GameData.CONFIG["ship_speed"]) * (1.0 + 0.08 * SaveGame.skill("thrust"))
+	var overload := maxf(0.0, RunState.cargo_ratio() - 1.0)
+	var max_speed: float = float(GameData.CONFIG["ship_speed"]) * (1.0 + 0.08 * SaveGame.skill("thrust")) * (1.0 + 0.15 * RunState.run_upgrade_level("speed")) * maxf(0.5, 1.0 - overload * 0.5)
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var aim := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 	thrusting = false
@@ -115,25 +117,10 @@ func take_damage(amount: float) -> void:
 
 
 func _draw() -> void:
-	# Ombre portée : toujours en bas à droite, quelle que soit la rotation.
-	draw_set_transform(Vector2.ZERO, -rotation)
-	draw_colored_polygon(DrawUtils.ellipse_points(Vector2(5, 10), 16, 10), DrawUtils.SHADOW)
-	draw_set_transform(Vector2.ZERO, 0.0)
-
+	# Blink d'invulnérabilité
 	var blink := invulnerable > 0.0 and dash_time <= 0.0 and int(_time * 20.0) % 2 == 0
 	modulate.a = 0.5 if blink else 1.0
-
+	# Flamme de propulsion (dessinée derrière le Sprite2D enfant)
 	if thrusting:
 		var flame := 10.0 + sin(_time * 40.0) * 4.0
 		DrawUtils.polygon(self, PackedVector2Array([Vector2(-13, -6), Vector2(-13 - flame, 0), Vector2(-13, 6)]), Color("ff9a3c"), 2.5)
-	var wing := Color("ff9a3c")
-	DrawUtils.polygon(self, PackedVector2Array([Vector2(-4, -8), Vector2(-14, -20), Vector2(-18, -16), Vector2(-12, -5)]), wing)
-	DrawUtils.polygon(self, PackedVector2Array([Vector2(-4, 8), Vector2(-12, 5), Vector2(-18, 16), Vector2(-14, 20)]), wing)
-	DrawUtils.rect(self, Rect2(12, -4, 14, 8), Color("ffd166"))
-	var body := PackedVector2Array([
-		Vector2(22, 0), Vector2(14, -8), Vector2(2, -11), Vector2(-14, -9),
-		Vector2(-14, 9), Vector2(2, 11), Vector2(14, 8),
-	])
-	DrawUtils.polygon(self, body, Color("f4e3c1"), 3.5)
-	DrawUtils.circle(self, Vector2(5, 0), 6.0, Color("bfe6ff"), 2.5)
-	draw_circle(Vector2(3, -2), 1.8, Color.WHITE)

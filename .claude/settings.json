@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "input=$(cat); f=$(echo \"$input\" | jq -r '.tool_input.file_path // empty' 2>/dev/null); echo \"$f\" | grep -qE '\\.gd$' || exit 0; tmpout=$(mktemp); timeout 25 \"/mnt/c/Users/Aym2ric/Downloads/Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe\" --headless --check-only --path \"C:/Users/Aym2ric/Desktop/vaisseau-minier-godot/vaisseau-minier\" >\"$tmpout\" 2>&1 || true; errors=$(grep -E \"SCRIPT ERROR|Parse Error|Cannot infer|Expected .* got|Unexpected token|not declared\" \"$tmpout\" | head -5 | tr '\\n' ' '); rm -f \"$tmpout\"; [ -z \"$errors\" ] && exit 0; jq -n --arg e \"Erreur GDScript detectee: $errors\" '{\"hookSpecificOutput\":{\"hookEventName\":\"PostToolUse\",\"additionalContext\":$e}}'; exit 2",
+            "timeout": 30,
+            "asyncRewake": true,
+            "statusMessage": "Vérification GDScript..."
+          }
+        ]
+      }
+    ]
+  }
+}

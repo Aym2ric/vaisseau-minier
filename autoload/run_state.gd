@@ -6,6 +6,7 @@ signal hull_changed(hull: float, max_hull: float)
 signal cargo_changed
 signal run_failed
 signal resource_discovered(id: String)
+signal leveled_up(level: int, choices: Array)
 
 var active := false
 var planet_id := "roc"
@@ -18,6 +19,11 @@ var credits := 0
 var quota := 20
 var sector_got := 0          # progression du quota (une ressource rare compte triple)
 var threat := 0.0            # mise à jour par le secteur
+var xp := 0
+var level := 0
+var xp_to_next := 8
+var run_upgrades: Dictionary = {}   # upgrade_id -> nombre d'applications
+var sector_type := "standard"       # "standard", "rich", "pirate"
 var _started_ms := 0
 
 
@@ -32,6 +38,10 @@ func start_run(id: String) -> void:
 	hull = max_hull
 	cargo = {}
 	credits = 0
+	xp = 0
+	level = 0
+	xp_to_next = 8
+	run_upgrades = {}
 	active = true
 	_started_ms = Time.get_ticks_msec()
 	_setup_sector()
@@ -45,12 +55,13 @@ func next_sector() -> void:
 
 
 func _setup_sector() -> void:
-	mult = 1.0 + float(GameData.CONFIG["mult_step"]) * (sector - 1)
+	mult = 1.0 + float(GameData.CONFIG["mult_step"]) * (sector - 1) + 0.25 * run_upgrade_level("mult")
 	var base := float(GameData.CONFIG["quota_base"])
 	var growth := float(GameData.CONFIG["quota_growth"])
 	quota = int(round(base * pow(growth, sector - 1)))
 	sector_got = 0
 	threat = 0.0
+	sector_type = "standard"
 
 
 func quota_reached() -> bool:
@@ -58,13 +69,18 @@ func quota_reached() -> bool:
 
 
 func add_resource(id: String, amount: int) -> void:
+	## Stocke dans la soute. Ne compte plus vers le quota (voir add_quota).
 	cargo[id] = int(cargo.get(id, 0)) + amount
-	var res: Dictionary = GameData.RESOURCES[id]
-	sector_got += amount * (3 if res["rare"] else 1)
 	var found: Dictionary = SaveGame.data["found"]
 	if not found.has(id):
 		found[id] = true
 		resource_discovered.emit(id)
+	cargo_changed.emit()
+
+
+func add_quota(amount: int, rare: bool = false) -> void:
+	## Compte vers le quota du secteur (appelé à la destruction de roche).
+	sector_got += amount * (3 if rare else 1)
 	cargo_changed.emit()
 
 
@@ -98,6 +114,77 @@ func cargo_text() -> String:
 	return " · ".join(parts) if parts.size() > 0 else "vide"
 
 
+func cargo_weight() -> int:
+	var total := 0
+	for id in cargo:
+		var res: Dictionary = GameData.RESOURCES[id]
+		total += int(cargo[id]) * int(res["weight"])
+	return total
+
+
+func cargo_cap() -> int:
+	return int(GameData.CONFIG["cargo_cap"]) + 50 * SaveGame.skill("cargo")
+
+
+func cargo_ratio() -> float:
+	var cap := cargo_cap()
+	return float(cargo_weight()) / float(cap) if cap > 0 else 0.0
+
+
+func cargo_full() -> bool:
+	return cargo_ratio() >= 1.5
+
+
+func add_xp(amount: int) -> void:
+	xp += amount
+	if xp >= xp_to_next:
+		xp -= xp_to_next
+		level += 1
+		xp_to_next = int(round(xp_to_next * 1.3))
+		leveled_up.emit(level, _pick_upgrades(3))
+
+
+func run_upgrade_level(id: String) -> int:
+	return int(run_upgrades.get(id, 0))
+
+
+func apply_upgrade(id: String) -> void:
+	run_upgrades[id] = run_upgrade_level(id) + 1
+	match id:
+		"repair":
+			heal(20.0)
+		"armor":
+			max_hull += 20.0
+			hull = minf(hull + 20.0, max_hull)
+			hull_changed.emit(hull, max_hull)
+		"mult":
+			mult += 0.25
+
+
+func _pick_upgrades(count: int) -> Array:
+	var pool: Array = GameData.RUN_UPGRADES.keys().duplicate()
+	pool.shuffle()
+	return pool.slice(0, mini(count, pool.size()))
+
+
+func sector_rock_mult() -> float:
+	match sector_type:
+		"rich":   return 1.6
+		"pirate": return 0.6
+		_:        return 1.0
+
+
+func sector_threat_mult() -> float:
+	match sector_type:
+		"rich":   return 0.7
+		"pirate": return 1.6
+		_:        return 1.0
+
+
+func sector_credits_mult() -> float:
+	return 2.0 if sector_type == "pirate" else 1.0
+
+
 ## Termine la run et verse le butin dans la sauvegarde. Retourne un résumé.
 func end_run(success: bool) -> Dictionary:
 	active = false
@@ -124,6 +211,15 @@ func end_run(success: bool) -> Dictionary:
 		"credits": kept_credits,
 		"seconds": int((Time.get_ticks_msec() - _started_ms) / 1000),
 	}
+	if success and sector >= 2:
+		var order: Array = GameData.PLANETS.keys()
+		var idx: int = order.find(planet_id)
+		if idx >= 0 and idx + 1 < order.size():
+			var next_id: String = order[idx + 1]
+			var unlocked: Dictionary = SaveGame.data["unlocked"]
+			if not unlocked.has(next_id):
+				unlocked[next_id] = true
+				summary["unlocked"] = next_id
 	var history: Array = SaveGame.data["history"]
 	history.push_front(summary)
 	if history.size() > 10:

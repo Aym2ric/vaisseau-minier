@@ -2,7 +2,12 @@ extends Node
 ## Données de jeu, reprises du prototype validé.
 ## Plus tard, chaque catégorie pourra devenir une Resource (.tres) éditable dans l'inspecteur.
 
-const ARENA := Vector2(960, 600)
+var ARENA: Vector2
+
+
+func _ready() -> void:
+	ARENA = get_viewport().get_visible_rect().size
+	get_viewport().size_changed.connect(func() -> void: ARENA = get_viewport().get_visible_rect().size)
 
 # Couches de collision (bits) : voir aussi [layer_names] dans project.godot.
 const LAYER_PLAYER := 1
@@ -31,18 +36,19 @@ const CONFIG := {
 	"magnet_radius": 55.0,
 	"event_min": 14.0,
 	"event_max": 22.0,
+	"cargo_cap": 100,       # capacité de la soute (Scout), en unités de poids
 }
 
 const RESOURCES := {
-	"fer": {"name": "Fer", "color": Color(0.824, 0.655, 0.486), "base": 10, "rare": false},
-	"cristal": {"name": "Cristal", "color": Color(0.561, 0.910, 1.0), "base": 22, "rare": false},
-	"helium": {"name": "Hélium-3", "color": Color(0.788, 0.608, 1.0), "base": 36, "rare": false},
-	"magma": {"name": "Magma", "color": Color(1.0, 0.416, 0.122), "base": 55, "rare": false},
-	"titane": {"name": "Titane", "color": Color(0.875, 0.906, 0.949), "base": 60, "rare": true},
-	"cryonite": {"name": "Cryonite", "color": Color(0.247, 0.722, 1.0), "base": 80, "rare": true},
-	"plasma": {"name": "Plasma", "color": Color(1.0, 0.478, 0.851), "base": 100, "rare": true},
-	"obsidienne": {"name": "Obsidienne", "color": Color(0.486, 0.420, 1.0), "base": 130, "rare": true},
-	"noyau": {"name": "Noyau de gardien", "color": Color(1.0, 0.820, 0.400), "base": 300, "rare": true},
+	"fer":        {"name": "Fer",              "color": Color(0.824, 0.655, 0.486), "base": 10,  "rare": false, "weight": 1},
+	"cristal":    {"name": "Cristal",          "color": Color(0.561, 0.910, 1.0),   "base": 22,  "rare": false, "weight": 1},
+	"helium":     {"name": "Hélium-3",         "color": Color(0.788, 0.608, 1.0),   "base": 36,  "rare": false, "weight": 1},
+	"magma":      {"name": "Magma",            "color": Color(1.0, 0.416, 0.122),   "base": 55,  "rare": false, "weight": 1},
+	"titane":     {"name": "Titane",           "color": Color(0.875, 0.906, 0.949), "base": 60,  "rare": true,  "weight": 3},
+	"cryonite":   {"name": "Cryonite",         "color": Color(0.247, 0.722, 1.0),   "base": 80,  "rare": true,  "weight": 3},
+	"plasma":     {"name": "Plasma",           "color": Color(1.0, 0.478, 0.851),   "base": 100, "rare": true,  "weight": 3},
+	"obsidienne": {"name": "Obsidienne",       "color": Color(0.486, 0.420, 1.0),   "base": 130, "rare": true,  "weight": 3},
+	"noyau":      {"name": "Noyau de gardien", "color": Color(1.0, 0.820, 0.400),   "base": 300, "rare": true,  "weight": 5},
 }
 
 const PLANETS := {
@@ -85,7 +91,39 @@ const ENEMIES := {
 }
 
 const WEAPONS := {
-	"blaster": {"name": "Blaster", "cooldown": 0.26, "damage": 1.0, "speed": 720.0, "life": 0.75},
+	"blaster": {"name": "Blaster", "cooldown": 0.26, "damage": 1.0,  "speed": 720.0, "life": 0.75},
+	"laser":    {"name": "Laser",    "cooldown": 0.0,  "damage": 10.0, "speed": 0.0,   "life": 0.0,
+				 "range": 340.0, "heat_rate": 0.85, "cool_rate": 1.3},
+	"launcher": {"name": "Roquettes","cooldown": 1.6,  "damage": 28.0, "speed": 190.0, "life": 3.5,
+				 "explosion_radius": 65.0, "explosion_damage": 14.0},
+}
+
+## Améliorations choisies à chaque montée de niveau (en cours de run, non persistantes).
+const RUN_UPGRADES := {
+	"repair":  {"name": "Réparation rapide",    "desc": "Restaure 20 PV."},
+	"armor":   {"name": "Blindage renforcé",    "desc": "+20 PV maximum."},
+	"speed":   {"name": "Propulseur turbo",     "desc": "+15 % de vitesse."},
+	"magnet":  {"name": "Aimant étendu",        "desc": "Rayon d'attraction ×1.5."},
+	"rate":    {"name": "Cadence améliorée",    "desc": "-20 % de rechargement."},
+	"multi":   {"name": "Double canon",         "desc": "+1 projectile par tir."},
+	"dmg":     {"name": "Munitions perforantes","desc": "+25 % de dégâts de tir."},
+	"mult":    {"name": "Scanner de minerai",   "desc": "+0.25 multiplicateur de butin."},
+}
+
+## Compétences persistantes achetées au hub avec des crédits.
+## Coût du niveau N = cost × N (niveau 1 = cost×1, niveau 2 = cost×2…)
+const SKILLS := {
+	"hull":          {"name": "Blindage",        "desc": "+15 PV max.",          "cost": 200, "max": 5},
+	"thrust":        {"name": "Propulseurs",     "desc": "+8 % de vitesse.",     "cost": 150, "max": 5},
+	"dash":          {"name": "Esquive",          "desc": "Débloque l'esquive.",  "cost": 300, "max": 1},
+	"cargo":         {"name": "Soute élargie",   "desc": "+50 unités capac.",    "cost": 180, "max": 3},
+	"magnet":        {"name": "Aimant",           "desc": "+30 % de portée.",     "cost": 120, "max": 5},
+	"blaster_multi": {"name": "Double canon",     "desc": "+1 projectile.",        "cost": 250, "max": 3},
+	"blaster_dmg":   {"name": "Calibre",          "desc": "+20 % de dégâts.",      "cost": 200, "max": 5},
+	"laser_dmg":     {"name": "Laser surpuissant","desc": "+20 % de dégâts/s.",    "cost": 220, "max": 5},
+	"laser_cool":    {"name": "Dissipateur",      "desc": "+15 % refroidissement.", "cost": 180, "max": 4},
+	"launcher_dmg":  {"name": "Ogive renforcée", "desc": "+20 % de dégâts.",      "cost": 220, "max": 5},
+	"insure":        {"name": "Assurance-cargo",  "desc": "+12 % soute gardée.",   "cost": 300, "max": 3},
 }
 
 ## Effets de chaque arme, plus tard : laser, lance-flammes, roquettes (voir le document de conception).

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 28">
+  <!-- Dôme (bleu, derrière la soucoupe) -->
+  <path d="M 15 11 A 10 10 0 0 1 35 11 Z"
+    fill="#bfe6ff" stroke="#120b0a" stroke-width="3" stroke-linejoin="round"/>
+  <!-- Pilote (vert, derrière la soucoupe) -->
+  <circle cx="25" cy="9" r="5"
+    fill="#8fd35f" stroke="#120b0a" stroke-width="2"/>
+  <circle cx="26.5" cy="8" r="1.8" fill="#120b0a"/>
+  <!-- Soucoupe (gris, par-dessus) -->
+  <ellipse cx="25" cy="17" rx="22" ry="8"
+    fill="#9aa3b5" stroke="#120b0a" stroke-width="3"/>
+  <!-- Lumières (rouge) -->
+  <circle cx="14" cy="18" r="2.6" fill="#ff5a5f"/>
+  <circle cx="25" cy="18" r="2.6" fill="#ff5a5f"/>
+  <circle cx="36" cy="18" r="2.6" fill="#ff5a5f"/>
+</svg>
