@@ -1,0 +1,47 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Vaisseau minier"
+config/description="Roguelite d'action : pille des planètes avec ton vaisseau minier."
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7")
+config/icon="res://icon.svg"
+
+[autoload]
+
+GameData="*res://autoload/game_data.gd"
+SaveGame="*res://autoload/save_game.gd"
+RunState="*res://autoload/run_state.gd"
+InputSetup="*res://autoload/input_setup.gd"
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=600
+window/stretch/mode="canvas_items"
+
+[layer_names]
+
+2d_physics/layer_1="joueur"
+2d_physics/layer_2="roches"
+2d_physics/layer_3="ennemis"
+2d_physics/layer_4="murs"
+
+[physics]
+
+2d/default_gravity=0.0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.141, 0.082, 0.059, 1)
