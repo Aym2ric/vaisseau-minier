@@ -1,0 +1,16 @@
+# Critères d'acceptation
+- [ ] Chaque onglet est accessible, sélection visible et focus clavier utilisable.
+- [ ] À 1280×720 et 1920×1080, pas de chevauchement ni action essentielle hors écran.
+- [ ] Planète ou difficulté verrouillée : raison affichée, départ impossible.
+- [ ] Départ valide : une seule run réelle, mission non révélée avant atterrissage.
+- [ ] Presets CRUD persistants ; duplication indépendante ; modules uniques et limite respectée.
+- [ ] Aucun sélecteur d'outil de minage ; dégâts combat/minage affichés séparément.
+- [ ] Achat avec stock insuffisant ou prérequis absent : aucune mutation.
+- [ ] Achat valide : coût déduit une seule fois, rang mis à jour, UI rafraîchie, persistance vérifiée après redémarrage.
+- [ ] Échec de persistance : message explicite, pas de faux succès.
+- [ ] Épinglage retrouvé après redémarrage et dans le bilan si intégré.
+- [ ] Entrepôt affiche exclusivement les ressources sécurisées.
+- [ ] Archives vides puis alimentées après extraction ou mort réelle.
+- [ ] Reprise active : pas de deuxième expédition ; reprise exacte via flux existant.
+- [ ] Données inconnues ou anciennes : erreur gérée, pas de crash ni perte silencieuse.
+- [ ] Les tests existants de combat, minage, extraction et sauvegarde restent valides.

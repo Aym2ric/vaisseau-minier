@@ -1,507 +1,618 @@
 class_name Hub
 extends Control
 ## Vaisseau-mère — interface menus GDD V5.
-## 4 onglets : Expédition, Recherche, Entrepôt, Archives.
+## Layout 3 colonnes : sidebar | contenu | détail. 6 sections.
 
 signal run_started(planet_id: String, difficulty: int)
 signal run_resumed
 
-const BG     := Color("0d0806")
-const PANEL  := Color("1e120e")
-const INK    := Color("f6e7cf")
-const MUTED  := Color("b89e80")
-const ACCENT := Color("ff9a3c")
-const GREEN  := Color("8fd35f")
-const DIM    := Color("3a2622")
+# --- Palette (maquette : bleu nuit / ardoise / cyan / orange) ---
+const BG        := Color("0d1117")
+const BG_PANEL  := Color("151c27")
+const BG_ITEM   := Color("1c2535")
+const BG_SEL    := Color("173040")
+const BG_SIDE   := Color("0b1120")
+const CYAN      := Color("3ecfcf")
+const ORANGE    := Color("e8821a")
+const INK       := Color("c8d8e8")
+const MUTED     := Color("5a7890")
+const GREEN     := Color("4aad6a")
+const BORDER    := Color("243040")
+const RED_ERR   := Color("cc4444")
 
+# --- État ---
 var last_summary: Dictionary = {}
-
 var _selected_planet     := ""
 var _selected_difficulty := 1
-var _planet_buttons: Array     = []
-var _diff_buttons: Array       = []
-var _weapon_buttons: Array     = []
-var _param_buttons: Dictionary = {}
-var _tree_tab := "navigation"
+var _current_section     := "navigation"
+var _selected_skill      := ""
+var _selected_resource   := ""
+var _selected_run_idx    := -1
+var _tree_tab            := "navigation"
 
-# Onglets
-var _current_tab   := 0
-var _tab_btns: Array  = []
-var _tab_pages: Array = []
-
-# Labels dynamiques
-var _summary_label: Label
-var _stats_label: Label
-var _inventory_flow: HFlowContainer
-var _pinned_label: Label
-var _tree_content: VBoxContainer
+# --- Refs UI ---
+var _sidebar_btns:    Dictionary = {}
+var _content_scroll:  ScrollContainer
+var _content_body:    VBoxContainer
+var _detail_title:    Label
+var _detail_body:     VBoxContainer
+var _footer_crumb:    Label
+var _footer_btn:      Button
+var _planet_map:      Control
+var _diff_btns:       Array = []
+var _weapon_btns:     Array = []
+var _param_btns:      Dictionary = {}
+var _skill_rows:      Dictionary = {}
 
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
-
-	var bg := ColorRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = BG
-	add_child(bg)
-
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 28)
-	add_child(margin)
-
-	var root := VBoxContainer.new()
-	root.add_theme_constant_override("separation", 10)
-	margin.add_child(root)
-
-	_build_header(root)
-	_build_tab_bar(root)
-	_build_tab_pages(root)
-	_build_launch_row(root)
+	_build_shell()
 
 	var unlocked: Dictionary = SaveGame.data["unlocked"]
 	var prev: String = String(SaveGame.data["selected_planet"])
 	_selected_planet = prev if unlocked.has(prev) else unlocked.keys()[0]
 	_selected_difficulty = int(SaveGame.data.get("selected_difficulty", 1))
 
-	_switch_tab(0)
-	_refresh()
+	_switch_section("navigation")
 
 
-# --- En-tête -------------------------------------------------------
+# ==================================================================
+# SHELL : header / sidebar / content / detail / footer
+# ==================================================================
+
+func _build_shell() -> void:
+	var root := VBoxContainer.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_theme_constant_override("separation", 0)
+	add_child(root)
+
+	_add_bg(root)
+	_build_header(root)
+
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 0)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	root.add_child(body)
+
+	_build_sidebar(body)
+	_build_content_area(body)
+	_build_detail_panel(body)
+	_build_footer(root)
+
+
+func _add_bg(parent: Node) -> void:
+	var bg := ColorRect.new()
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.color = BG
+	add_child(bg)
+
 
 func _build_header(parent: Node) -> void:
+	var bar := PanelContainer.new()
+	bar.add_theme_stylebox_override("panel", _flat(BG_SIDE, 0, Color(BORDER, 1.0), [0,0,0,1]))
+	parent.add_child(bar)
 	var row := HBoxContainer.new()
-	parent.add_child(row)
+	row.add_theme_constant_override("separation", 0)
+	bar.add_child(row)
+
+	var m := MarginContainer.new()
+	m.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for s in ["left","right","top","bottom"]: m.add_theme_constant_override("margin_"+s, 16)
+	row.add_child(m)
+
 	var title := Label.new()
-	_style_label(title, 28, ACCENT)
-	title.text = "VAISSEAU-MÈRE"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(title)
-	# Sous-titre : statistiques rapides
-	var stats_lbl := Label.new()
-	_style_label(stats_lbl, 13, MUTED)
-	var gs: Dictionary = SaveGame.data.get("stats", {})
-	stats_lbl.text = "%d expéditions · %d kills" % [int(gs.get("runs", 0)), int(gs.get("kills", 0))]
-	stats_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	row.add_child(stats_lbl)
+	title.text = "VAISSEAU MINIER  /  VAISSEAU-MÈRE"
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", INK)
+	m.add_child(title)
+
+	var mr := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: mr.add_theme_constant_override("margin_"+s, 16)
+	row.add_child(mr)
+	var links := Label.new()
+	links.text = "STOCK  ·  PROFIL"
+	links.add_theme_font_size_override("font_size", 13)
+	links.add_theme_color_override("font_color", CYAN)
+	links.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	mr.add_child(links)
 
 
-# --- Onglets -------------------------------------------------------
+func _build_sidebar(parent: Node) -> void:
+	var side := PanelContainer.new()
+	side.add_theme_stylebox_override("panel", _flat(BG_SIDE, 0, Color(BORDER, 1.0), [0,0,0,1]))
+	side.custom_minimum_size = Vector2(170, 0)
+	parent.add_child(side)
 
-func _build_tab_bar(parent: Node) -> void:
-	var bar := HBoxContainer.new()
-	bar.add_theme_constant_override("separation", 4)
+	var margin := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+s, 12)
+	side.add_child(margin)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 4)
+	margin.add_child(col)
+
+	var sections := [
+		["navigation", "NAVIGATION"],
+		["hangar",     "HANGAR"],
+		["recherche",  "RECHERCHE"],
+		["entrepot",   "ENTREPÔT"],
+		["archives",   "ARCHIVES"],
+		["parametres", "PARAMÈTRES"],
+	]
+	for s in sections:
+		var sid: String = s[0]
+		var slbl: String = s[1]
+		var btn := Button.new()
+		btn.text = slbl
+		btn.custom_minimum_size = Vector2(0, 44)
+		btn.add_theme_font_size_override("font_size", 13)
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var captured: String = sid
+		btn.pressed.connect(func() -> void: _switch_section(captured))
+		col.add_child(btn)
+		_sidebar_btns[sid] = btn
+
+	# Spacer
+	var sp := Control.new()
+	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(sp)
+
+
+func _build_content_area(parent: Node) -> void:
+	var wrapper := PanelContainer.new()
+	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wrapper.add_theme_stylebox_override("panel", _flat(BG, 0))
+	parent.add_child(wrapper)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 0)
+	wrapper.add_child(col)
+
+	_content_scroll = ScrollContainer.new()
+	_content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	col.add_child(_content_scroll)
+
+	_content_body = VBoxContainer.new()
+	_content_body.add_theme_constant_override("separation", 0)
+	_content_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_content_scroll.add_child(_content_body)
+
+
+func _build_detail_panel(parent: Node) -> void:
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(260, 0)
+	panel.add_theme_stylebox_override("panel", _flat(BG_PANEL, 0, Color(BORDER, 1.0), [1,0,0,0]))
+	parent.add_child(panel)
+
+	var margin := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+s, 20)
+	panel.add_child(margin)
+
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 10)
+	margin.add_child(col)
+
+	_detail_title = Label.new()
+	_detail_title.add_theme_font_size_override("font_size", 16)
+	_detail_title.add_theme_color_override("font_color", CYAN)
+	_detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(_detail_title)
+
+	_detail_body = VBoxContainer.new()
+	_detail_body.add_theme_constant_override("separation", 8)
+	_detail_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	col.add_child(_detail_body)
+
+
+func _build_footer(parent: Node) -> void:
+	var bar := PanelContainer.new()
+	bar.add_theme_stylebox_override("panel", _flat(BG_SIDE, 0, Color(BORDER, 1.0), [1,0,0,0]))
 	parent.add_child(bar)
 
-	var tab_defs := [["Expédition", "⚑"], ["Recherche", "⊞"], ["Entrepôt", "◈"], ["Archives", "☰"]]
-	for i in tab_defs.size():
-		var btn := Button.new()
-		btn.text = "%s  %s" % [tab_defs[i][1], tab_defs[i][0]]
-		btn.custom_minimum_size = Vector2(160, 38)
-		btn.add_theme_font_size_override("font_size", 14)
-		btn.focus_mode = Control.FOCUS_NONE
-		var idx: int = i
-		btn.pressed.connect(func() -> void: _switch_tab(idx))
-		bar.add_child(btn)
-		_tab_btns.append(btn)
-
-
-func _build_tab_pages(parent: Node) -> void:
-	var stack := Control.new()
-	stack.set_anchors_preset(Control.PRESET_FULL_RECT)
-	stack.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	parent.add_child(stack)
-
-	for _i in 4:
-		var scroll := ScrollContainer.new()
-		scroll.set_anchors_preset(Control.PRESET_FULL_RECT)
-		scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		stack.add_child(scroll)
-		var page := VBoxContainer.new()
-		page.add_theme_constant_override("separation", 10)
-		page.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		scroll.add_child(page)
-		_tab_pages.append(page)
-
-	_build_expedition_tab(_tab_pages[0])
-	_build_research_tab(_tab_pages[1])
-	_build_warehouse_tab(_tab_pages[2])
-	_build_archives_tab(_tab_pages[3])
-
-
-func _switch_tab(idx: int) -> void:
-	_current_tab = idx
-	for i in _tab_pages.size():
-		_tab_pages[i].get_parent().visible = (i == idx)
-		var btn: Button = _tab_btns[i]
-		if i == idx:
-			btn.add_theme_stylebox_override("normal",  _box(ACCENT, 10, 0))
-			btn.add_theme_stylebox_override("hover",   _box(ACCENT.lerp(Color.WHITE, 0.1), 10, 0))
-			btn.add_theme_color_override("font_color", Color("1a0d0a"))
-		else:
-			btn.add_theme_stylebox_override("normal",  _box(DIM, 10, 0))
-			btn.add_theme_stylebox_override("hover",   _box(DIM.lerp(Color.WHITE, 0.1), 10, 0))
-			btn.add_theme_color_override("font_color", MUTED)
-
-
-# --- Onglet 0 : Expédition -----------------------------------------
-
-func _build_expedition_tab(page: VBoxContainer) -> void:
-	var cols := HBoxContainer.new()
-	cols.add_theme_constant_override("separation", 12)
-	page.add_child(cols)
-
-	# Colonne gauche : planètes
-	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.add_theme_constant_override("separation", 10)
-	cols.add_child(left)
-	_build_planet_cards(left)
-
-	# Colonne droite : difficulté + arme + params
-	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(400, 0)
-	right.add_theme_constant_override("separation", 10)
-	cols.add_child(right)
-	_build_difficulty_section(right)
-	_build_weapon_section(right)
-	_build_params_section(right)
-
-
-func _build_planet_cards(parent: Node) -> void:
-	var sec := _section(parent, "Destination", false)
-	var flow := HFlowContainer.new()
-	flow.add_theme_constant_override("h_separation", 8)
-	flow.add_theme_constant_override("v_separation", 8)
-	sec.add_child(flow)
-
-	var unlocked: Dictionary = SaveGame.data["unlocked"]
-	for id in GameData.PLANETS:
-		var planet: Dictionary = GameData.PLANETS[id]
-		var is_unlocked: bool  = unlocked.has(id)
-
-		var card := Button.new()
-		card.custom_minimum_size = Vector2(140, 72)
-		card.focus_mode = Control.FOCUS_NONE
-		var planet_bg: Color = planet["bg"] if is_unlocked else Color("1a1210")
-		card.add_theme_stylebox_override("normal",  _box(planet_bg, 12, 2))
-		card.add_theme_stylebox_override("hover",   _box(planet_bg.lerp(Color.WHITE, 0.12), 12, 2))
-		card.add_theme_stylebox_override("pressed", _box(planet_bg.lerp(Color.WHITE, 0.2), 12, 2))
-		card.add_theme_stylebox_override("focus",   _box(planet_bg, 12, 2))
-
-		var inner := VBoxContainer.new()
-		inner.alignment = BoxContainer.ALIGNMENT_CENTER
-		inner.set_anchors_preset(Control.PRESET_FULL_RECT)
-		inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		card.add_child(inner)
-
-		var name_lbl := Label.new()
-		name_lbl.text = planet["name"] if is_unlocked else "🔒 %s" % planet["name"]
-		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		name_lbl.add_theme_font_size_override("font_size", 14)
-		name_lbl.add_theme_color_override("font_color", INK if is_unlocked else MUTED)
-		inner.add_child(name_lbl)
-
-		if is_unlocked:
-			var res_name: String = GameData.RESOURCES[planet["res"]]["name"] if GameData.RESOURCES.has(planet["res"]) else ""
-			var sub_lbl := Label.new()
-			sub_lbl.text = res_name
-			sub_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			sub_lbl.add_theme_font_size_override("font_size", 11)
-			sub_lbl.add_theme_color_override("font_color", planet["rock"])
-			inner.add_child(sub_lbl)
-
-		card.disabled = not is_unlocked
-		if is_unlocked:
-			var pid: String = id
-			card.pressed.connect(func() -> void:
-				_selected_planet = pid
-				_refresh()
-			)
-		flow.add_child(card)
-		_planet_buttons.append({"id": id, "btn": card, "locked": not is_unlocked, "planet_bg": planet_bg})
-
-
-func _build_difficulty_section(parent: Node) -> void:
-	var content := _section(parent, "Difficulté", false)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	content.add_child(row)
-	var diffs := [[1, "Exploration", Color("3c7a3c")], [2, "Normal", Color("4a5a7a")],
-		[3, "Hostile", Color("7a5a30")], [4, "Extrême", Color("7a3030")], [5, "Infernal", Color("6a2060")]]
-	for d in diffs:
-		var diff_level: int = d[0]
-		var diff_name: String = d[1]
-		var diff_col: Color  = d[2]
-		var btn := Button.new()
-		btn.text = diff_name
-		btn.custom_minimum_size = Vector2(0, 38)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 13)
-		btn.focus_mode = Control.FOCUS_NONE
-		var dl: int = diff_level
-		var dc: Color = diff_col
-		btn.pressed.connect(func() -> void:
-			_selected_difficulty = dl
-			_refresh()
-		)
-		row.add_child(btn)
-		_diff_buttons.append({"level": diff_level, "btn": btn, "col": diff_col})
+	row.add_theme_constant_override("separation", 16)
+	bar.add_child(row)
+
+	var ml := MarginContainer.new()
+	ml.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	for s in ["left","right","top","bottom"]: ml.add_theme_constant_override("margin_"+s, 16)
+	row.add_child(ml)
+
+	_footer_crumb = Label.new()
+	_footer_crumb.add_theme_font_size_override("font_size", 13)
+	_footer_crumb.add_theme_color_override("font_color", MUTED)
+	_footer_crumb.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ml.add_child(_footer_crumb)
+
+	var mr := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: mr.add_theme_constant_override("margin_"+s, 10)
+	row.add_child(mr)
+
+	_footer_btn = Button.new()
+	_footer_btn.custom_minimum_size = Vector2(240, 48)
+	_footer_btn.add_theme_font_size_override("font_size", 16)
+	_footer_btn.add_theme_color_override("font_color", Color("1a0d0a"))
+	_footer_btn.focus_mode = Control.FOCUS_NONE
+	_footer_btn.pressed.connect(_on_footer_btn)
+	mr.add_child(_footer_btn)
 
 
-func _build_weapon_section(parent: Node) -> void:
-	var content := _section(parent, "Arme équipée", false)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 6)
-	content.add_child(row)
-	var weapon_icons := {"blaster": "◆", "laser": "▶", "launcher": "⊞", "flame": "◉"}
-	for id in GameData.WEAPONS:
-		var def: Dictionary = GameData.WEAPONS[id]
-		var btn := Button.new()
-		btn.text = "%s  %s" % [weapon_icons.get(id, "·"), def["name"]]
-		btn.custom_minimum_size = Vector2(0, 38)
-		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		btn.add_theme_font_size_override("font_size", 13)
-		btn.focus_mode = Control.FOCUS_NONE
-		var wid: String = id
-		btn.pressed.connect(func() -> void:
-			var equipped: Dictionary = SaveGame.data["equipped"]
-			equipped["weapon"] = wid
-			SaveGame.save_game()
-			call_deferred("_refresh")
-		)
-		row.add_child(btn)
-		_weapon_buttons.append({"id": id, "btn": btn})
+# ==================================================================
+# NAVIGATION ENTRE SECTIONS
+# ==================================================================
 
+func _switch_section(section: String) -> void:
+	_current_section = section
+	_refresh_sidebar()
+	_clear_content()
+	_clear_detail()
 
-func _build_params_section(parent: Node) -> void:
-	var content := _section(parent, "Options", false)
-	var defs: Array = [
-		{"key": "control_mode", "label": "Pilotage", "opts": [["Libre", "free"], ["Inertie", "inertia"]]},
-		{"key": "auto_fire",    "label": "Tir auto",  "opts": [["Manuel", false], ["Auto", true]]},
-	]
-	for d: Dictionary in defs:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		content.add_child(row)
-		var lbl := Label.new()
-		_style_label(lbl, 13, MUTED)
-		lbl.text = "%s :" % d["label"]
-		lbl.custom_minimum_size = Vector2(80, 0)
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		row.add_child(lbl)
-		var key: String = d["key"]
-		_param_buttons[key] = []
-		for opt: Array in d["opts"]:
-			var opt_label: String = opt[0]
-			var opt_val: Variant  = opt[1]
-			var btn := Button.new()
-			btn.text = opt_label
-			btn.custom_minimum_size = Vector2(90, 32)
-			btn.add_theme_font_size_override("font_size", 13)
-			btn.focus_mode = Control.FOCUS_NONE
-			btn.pressed.connect(func() -> void:
-				var options: Dictionary = SaveGame.data["options"]
-				options[key] = opt_val
-				SaveGame.save_game()
-				call_deferred("_refresh")
-			)
-			row.add_child(btn)
-			_param_buttons[key].append({"value": opt_val, "btn": btn})
+	match section:
+		"navigation": _show_navigation()
+		"hangar":     _show_hangar()
+		"recherche":  _show_recherche()
+		"entrepot":   _show_entrepot()
+		"archives":   _show_archives()
+		"parametres": _show_parametres()
 
-
-# --- Onglet 1 : Recherche ------------------------------------------
-
-func _build_research_tab(page: VBoxContainer) -> void:
-	_tree_content = _section(page, "Arbres de compétences permanentes")
-
-
-# --- Onglet 2 : Entrepôt -------------------------------------------
-
-func _build_warehouse_tab(page: VBoxContainer) -> void:
-	var cols := HBoxContainer.new()
-	cols.add_theme_constant_override("separation", 12)
-	page.add_child(cols)
-
-	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left.add_theme_constant_override("separation", 10)
-	cols.add_child(left)
-
-	var inv_content := _section(left, "Ressources stockées")
-	_inventory_flow = HFlowContainer.new()
-	_inventory_flow.add_theme_constant_override("h_separation", 6)
-	_inventory_flow.add_theme_constant_override("v_separation", 6)
-	inv_content.add_child(_inventory_flow)
-
-	var right := VBoxContainer.new()
-	right.custom_minimum_size = Vector2(260, 0)
-	right.add_theme_constant_override("separation", 10)
-	cols.add_child(right)
-
-	var pin_content := _section(right, "Objectifs épinglés")
-	_pinned_label = Label.new()
-	_style_label(_pinned_label, 13, INK)
-	_pinned_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	pin_content.add_child(_pinned_label)
-
-
-# --- Onglet 3 : Archives -------------------------------------------
-
-func _build_archives_tab(page: VBoxContainer) -> void:
-	var cols := HBoxContainer.new()
-	cols.add_theme_constant_override("separation", 12)
-	page.add_child(cols)
-
-	var left := VBoxContainer.new()
-	left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cols.add_child(left)
-	var sum_content := _section(left, "Dernière expédition")
-	_summary_label = Label.new()
-	_style_label(_summary_label, 13, INK)
-	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	sum_content.add_child(_summary_label)
-
-	var right := VBoxContainer.new()
-	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cols.add_child(right)
-	var stats_content := _section(right, "Statistiques globales")
-	_stats_label = Label.new()
-	_style_label(_stats_label, 13, INK)
-	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	stats_content.add_child(_stats_label)
-
-
-# --- Bouton de lancement -------------------------------------------
-
-func _build_launch_row(parent: Node) -> void:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	parent.add_child(row)
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(spacer)
-	if SaveGame.has_run_save():
-		var resume_btn := _launch_btn("↩  Reprendre", Color("3c9fa0"))
-		resume_btn.pressed.connect(func() -> void: run_resumed.emit())
-		row.add_child(resume_btn)
-	var launch_btn := _launch_btn("Lancer  →", ACCENT)
-	launch_btn.pressed.connect(func() -> void: run_started.emit(_selected_planet, _selected_difficulty))
-	row.add_child(launch_btn)
-
-
-func _launch_btn(label: String, col: Color) -> Button:
-	var btn := Button.new()
-	btn.text = label
-	btn.custom_minimum_size = Vector2(200, 52)
-	btn.add_theme_font_size_override("font_size", 20)
-	btn.add_theme_color_override("font_color", Color("1a0d0a"))
-	btn.add_theme_stylebox_override("normal",  _box(col, 14, 0))
-	btn.add_theme_stylebox_override("hover",   _box(col.lerp(Color.WHITE, 0.15), 14, 0))
-	btn.add_theme_stylebox_override("pressed", _box(col.darkened(0.2), 14, 0))
-	btn.add_theme_stylebox_override("focus",   _box(col, 14, 0))
-	return btn
-
-
-# --- Rafraîchissement -----------------------------------------------
-
-func _refresh() -> void:
-	_refresh_expedition()
-	_refresh_research()
-	_refresh_warehouse()
-	_refresh_archives()
 	SaveGame.data["selected_planet"]     = _selected_planet
 	SaveGame.data["selected_difficulty"] = _selected_difficulty
 
 
-func _refresh_expedition() -> void:
-	# Cartes planètes
-	for entry in _planet_buttons:
-		var btn: Button = entry["btn"]
-		var sel: bool   = entry["id"] == _selected_planet
-		var base: Color = entry["planet_bg"]
-		var border_col  := ACCENT if sel else DrawUtils.OUTLINE
-		var style := _box(base.lerp(Color.WHITE, 0.15 if sel else 0.0), 12, 3 if sel else 2)
-		style.border_color = border_col
-		btn.add_theme_stylebox_override("normal", style)
+func _refresh_sidebar() -> void:
+	for sid in _sidebar_btns:
+		var btn: Button = _sidebar_btns[sid]
+		var active := sid == _current_section
+		btn.add_theme_stylebox_override("normal",  _flat(CYAN.darkened(0.6) if active else Color(BG_SIDE, 0.0), 6, Color(CYAN if active else BORDER, 1.0), [0,0,0,0]))
+		btn.add_theme_stylebox_override("hover",   _flat(Color(CYAN, 0.15), 6))
+		btn.add_theme_stylebox_override("pressed", _flat(Color(CYAN, 0.2), 6))
+		btn.add_theme_color_override("font_color", CYAN if active else MUTED)
 
-	# Difficultés
+
+func _clear_content() -> void:
+	for c in _content_body.get_children():
+		c.queue_free()
+	_diff_btns.clear()
+	_weapon_btns.clear()
+	_param_btns.clear()
+
+
+func _clear_detail() -> void:
+	_detail_title.text = ""
+	for c in _detail_body.get_children():
+		c.queue_free()
+
+
+# ==================================================================
+# SECTION : NAVIGATION
+# ==================================================================
+
+func _show_navigation() -> void:
+	_footer_crumb.text = "Hub  /  NAVIGATION"
+	_footer_btn.text   = "LANCER EXPÉDITION"
+	_set_footer_orange()
+
+	var title := _content_title("Choisir une destination")
+	_content_body.add_child(title)
+	_content_body.add_child(_content_subtitle("Sélectionne une planète puis une difficulté"))
+
+	# Carte des planètes
+	_planet_map = _build_planet_map()
+	_content_body.add_child(_planet_map)
+
+	# Difficulté (en dessous de la carte)
+	var diff_row := _content_section("Difficulté")
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	diff_row.add_child(row)
+	_diff_btns.clear()
+	var diffs := [[1,"Exploration",Color("2a5a2a")],[2,"Normal",Color("2a3a5a")],
+		[3,"Hostile",Color("5a4a1a")],[4,"Extrême",Color("5a2a1a")],[5,"Infernal",Color("4a1a4a")]]
+	for d in diffs:
+		var dl: int    = d[0]
+		var dn: String = d[1]
+		var dc: Color  = d[2]
+		var btn := Button.new()
+		btn.text = dn
+		btn.custom_minimum_size = Vector2(0, 36)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		btn.add_theme_font_size_override("font_size", 13)
+		btn.focus_mode = Control.FOCUS_NONE
+		var captured_dl: int = dl
+		btn.pressed.connect(func() -> void:
+			_selected_difficulty = captured_dl
+			_refresh_diff_buttons()
+			_refresh_planet_detail()
+		)
+		row.add_child(btn)
+		_diff_btns.append({"level": dl, "btn": btn, "col": dc})
+	_refresh_diff_buttons()
+	_refresh_planet_detail()
+
+
+func _build_planet_map() -> Control:
+	# Positions normalisées (x,y) dans le Control, centre du nœud
+	var node_positions := {
+		"roc":        Vector2(0.14, 0.50),
+		"desert":     Vector2(0.36, 0.22),
+		"volcan":     Vector2(0.57, 0.22),
+		"glace":      Vector2(0.36, 0.50),
+		"cristalline":Vector2(0.57, 0.50),
+		"organique":  Vector2(0.36, 0.78),
+		"radioactive":Vector2(0.57, 0.78),
+	}
+	var edges := [
+		["roc","desert"], ["roc","glace"], ["roc","organique"],
+		["desert","volcan"], ["glace","cristalline"], ["organique","radioactive"],
+	]
+
+	var map_wrapper := MarginContainer.new()
+	for s in ["left","right","top","bottom"]:
+		map_wrapper.add_theme_constant_override("margin_"+s, 20)
+	map_wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var map := _PlanetMapDraw.new()
+	map.custom_minimum_size = Vector2(0, 300)
+	map.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	map.node_positions = node_positions
+	map.edges = edges
+	map_wrapper.add_child(map)
+
+	var unlocked: Dictionary = SaveGame.data["unlocked"]
+	for pid in node_positions:
+		var planet: Dictionary = GameData.PLANETS.get(pid, {})
+		var is_unlocked: bool  = unlocked.has(pid)
+		var pname: String = planet.get("name", pid) if is_unlocked else "🔒"
+
+		var btn := Button.new()
+		btn.text = pname.to_upper()
+		btn.custom_minimum_size = Vector2(100, 36)
+		btn.add_theme_font_size_override("font_size", 11)
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.disabled = not is_unlocked
+
+		var planet_col: Color = planet.get("bg", Color("1a2030")) if is_unlocked else Color("1a1a2a")
+		var border_col: Color = planet.get("rock", Color("3a5070")) if is_unlocked else Color("2a3040")
+		btn.add_theme_stylebox_override("normal",  _flat(planet_col, 6, border_col))
+		btn.add_theme_stylebox_override("hover",   _flat(planet_col.lightened(0.15), 6, border_col))
+		btn.add_theme_stylebox_override("pressed", _flat(planet_col.lightened(0.25), 6, border_col))
+		btn.add_theme_stylebox_override("focus",   _flat(planet_col, 6, border_col))
+		btn.add_theme_color_override("font_color", INK if is_unlocked else MUTED)
+
+		map.add_child(btn)
+		map.node_buttons[pid] = btn
+		if is_unlocked:
+			var captured_pid: String = pid
+			btn.pressed.connect(func() -> void:
+				_selected_planet = captured_pid
+				map.selected_planet = _selected_planet
+				map.queue_redraw()
+				_refresh_diff_buttons()
+				_refresh_planet_detail()
+			)
+
+	map.selected_planet = _selected_planet
+	return map_wrapper
+
+
+func _refresh_diff_buttons() -> void:
 	var max_diff := SaveGame.max_difficulty(_selected_planet)
 	if _selected_difficulty > max_diff:
 		_selected_difficulty = 1
-	for entry in _diff_buttons:
+	for entry in _diff_btns:
 		var btn: Button  = entry["btn"]
-		var sel: bool    = entry["level"] == _selected_difficulty
-		var locked: bool = entry["level"] > max_diff
+		var lvl: int     = entry["level"]
 		var col: Color   = entry["col"]
+		var locked: bool = lvl > max_diff
+		var sel: bool    = lvl == _selected_difficulty
 		btn.disabled = locked
 		if locked:
-			btn.add_theme_stylebox_override("normal", _box(Color("1a1210"), 8, 1))
-			btn.add_theme_color_override("font_color", MUTED.darkened(0.5))
+			btn.add_theme_stylebox_override("normal", _flat(Color("0f1820"), 6, BORDER))
+			btn.add_theme_color_override("font_color", MUTED.darkened(0.4))
 		elif sel:
-			btn.add_theme_stylebox_override("normal", _box(col.lightened(0.2), 8, 2))
-			btn.add_theme_stylebox_override("hover",  _box(col.lightened(0.3), 8, 2))
+			btn.add_theme_stylebox_override("normal", _flat(col.lightened(0.2), 6, col.lightened(0.4)))
 			btn.add_theme_color_override("font_color", INK)
 		else:
-			btn.add_theme_stylebox_override("normal", _box(col.darkened(0.4), 8, 1))
-			btn.add_theme_stylebox_override("hover",  _box(col.darkened(0.2), 8, 1))
+			btn.add_theme_stylebox_override("normal", _flat(col.darkened(0.5), 6, col.darkened(0.2)))
 			btn.add_theme_color_override("font_color", MUTED)
 
-	# Armes
+
+func _refresh_planet_detail() -> void:
+	_clear_detail()
+	if not GameData.PLANETS.has(_selected_planet):
+		return
+	var planet: Dictionary = GameData.PLANETS[_selected_planet]
+	_detail_title.text = String(planet["name"])
+
+	var rows: Array = [
+		["Difficulté", "%d / 5" % _selected_difficulty],
+	]
+	# Ressources disponibles
+	var res_id: String = String(planet["res"])
+	var rare_id: String = String(planet.get("rare", ""))
+	if GameData.RESOURCES.has(res_id):
+		rows.append(["Ressource principale", "%s  · fréquent" % GameData.RESOURCES[res_id]["name"]])
+	if rare_id != "" and GameData.RESOURCES.has(rare_id):
+		rows.append(["Ressource rare", "%s  · rare" % GameData.RESOURCES[rare_id]["name"]])
+
+	# Exclusives
+	var excl: Array = planet.get("exclusive", [])
+	if excl.size() > 0:
+		var excl_names: PackedStringArray = []
+		for eid: String in excl:
+			if GameData.RESOURCES.has(eid):
+				excl_names.append(GameData.RESOURCES[eid]["name"])
+		if excl_names.size() > 0:
+			rows.append(["Exclusives", "  ·  ".join(excl_names)])
+
+	# Caractéristiques
+	if float(planet.get("wind", 0.0)) > 0.0:
+		rows.append(["Danger", "Vents %d km/h" % int(float(planet["wind"]))])
+	if float(planet.get("friction", 6.0)) < 2.5:
+		rows.append(["Sol", "Glissant (friction %.1f)" % float(planet["friction"])])
+
+	rows.append(["Mission", "Révélée sur place"])
+
+	for r in rows:
+		_detail_row(r[0], r[1])
+
+	# Meilleur résultat
+	var history: Array = SaveGame.data.get("history", [])
+	var best_time := INF
+	for run in history:
+		if String(run.get("planet", "")) == _selected_planet and run.get("success", false):
+			var t := float(run.get("seconds", INF))
+			if t < best_time:
+				best_time = t
+	if best_time < INF:
+		var bm := int(best_time) / 60
+		var bs := int(best_time) % 60
+		_detail_row("Meilleur temps", "%02d:%02d" % [bm, bs])
+
+
+# ==================================================================
+# SECTION : HANGAR
+# ==================================================================
+
+func _show_hangar() -> void:
+	_footer_crumb.text = "Hub  /  HANGAR"
+	_footer_btn.text   = "ENREGISTRER PRESET"
+	_set_footer_muted()
+
+	_content_body.add_child(_content_title("Configurer le vaisseau"))
+	_content_body.add_child(_content_subtitle("Vaisseau, arme, capacité et modules"))
+
+	var col := _content_section("")
+
+	# Vaisseau (Pioneer fixe pour l'instant)
+	col.add_child(_slot_row("Vaisseau", "Pioneer", false))
+
+	# Arme
 	var equipped_weapon: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
-	for entry in _weapon_buttons:
-		var btn: Button = entry["btn"]
-		var sel: bool   = entry["id"] == equipped_weapon
-		btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else DIM, 8, 1))
-		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else DIM.lerp(Color.WHITE, 0.1), 8, 1))
-		btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
+	_weapon_btns.clear()
+	for id in GameData.WEAPONS:
+		var def: Dictionary = GameData.WEAPONS[id]
+		var is_sel := id == equipped_weapon
+		var row := _slot_row("Arme", String(def["name"]), true)
+		# Teinter selon sélection
+		var style_col := Color(BG_SEL if is_sel else BG_ITEM)
+		(row as PanelContainer).add_theme_stylebox_override("panel", _flat(style_col, 6, CYAN if is_sel else BORDER))
+		var captured_id: String = id
+		(row as PanelContainer).gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+				SaveGame.data["equipped"]["weapon"] = captured_id
+				SaveGame.save_game()
+				_switch_section("hangar")
+		)
+		col.add_child(row)
+		_weapon_btns.append({"id": id, "row": row})
 
-	# Params
-	var options: Dictionary = SaveGame.data["options"]
-	for key: String in _param_buttons:
-		var current: Variant = options.get(key)
-		for entry: Dictionary in _param_buttons[key]:
-			var btn: Button = entry["btn"]
-			var sel: bool   = entry["value"] == current
-			btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else DIM, 8, 1))
-			btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else DIM.lerp(Color.WHITE, 0.1), 8, 1))
-			btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
+	# Capacité (dash seulement)
+	col.add_child(_slot_row("Capacité", "Esquive (Dash)", false))
+
+	# Modules (verrouillés)
+	for i in 4:
+		var mod_slots := SaveGame.skill("magnet")  # placeholder: nb modules débloqués
+		col.add_child(_slot_row("Module %d" % (i + 1), "Verrouillé", false, i < mod_slots))
+
+	# Statistiques dans le détail
+	_refresh_hangar_detail()
 
 
-func _refresh_research() -> void:
-	for child in _tree_content.get_children():
-		child.queue_free()
+func _slot_row(label: String, value: String, clickable: bool, unlocked: bool = true) -> PanelContainer:
+	var panel := PanelContainer.new()
+	panel.add_theme_stylebox_override("panel", _flat(BG_ITEM, 6, BORDER))
+	panel.custom_minimum_size = Vector2(0, 52)
+	if clickable and unlocked:
+		panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	var tree_tabs := [["navigation", "Navigation"], ["logistique", "Logistique"], ["armement", "Armement"], ["minage", "Minage"]]
-	var tabs_row := HBoxContainer.new()
-	tabs_row.add_theme_constant_override("separation", 4)
-	_tree_content.add_child(tabs_row)
-	for tab_def in tree_tabs:
-		var tab_id: String  = tab_def[0]
-		var tab_lbl: String = tab_def[1]
-		var active := tab_id == _tree_tab
-		var tab_btn := Button.new()
-		tab_btn.text = tab_lbl
-		tab_btn.add_theme_font_size_override("font_size", 13)
-		tab_btn.custom_minimum_size = Vector2(110, 32)
-		tab_btn.focus_mode = Control.FOCUS_NONE
-		tab_btn.add_theme_stylebox_override("normal", _box(ACCENT if active else DIM, 8, 1))
-		tab_btn.add_theme_stylebox_override("hover",  _box((ACCENT if active else DIM).lerp(Color.WHITE, 0.1), 8, 1))
-		tab_btn.add_theme_stylebox_override("focus",  _box(ACCENT if active else DIM, 8, 1))
-		tab_btn.add_theme_color_override("font_color", Color("1a0d0a") if active else INK)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 16)
+	panel.add_child(row)
+	var margin := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+s, 12)
+	row.add_child(margin)
+	var inner := HBoxContainer.new()
+	margin.add_child(inner)
+
+	var lbl := Label.new()
+	lbl.text = label + "  ·"
+	lbl.add_theme_font_size_override("font_size", 14)
+	lbl.add_theme_color_override("font_color", MUTED)
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(lbl)
+
+	var val := Label.new()
+	val.text = value
+	val.add_theme_font_size_override("font_size", 14)
+	val.add_theme_color_override("font_color", INK if unlocked else MUTED)
+	val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	val.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(val)
+
+	return panel
+
+
+func _refresh_hangar_detail() -> void:
+	_clear_detail()
+	_detail_title.text = "Statistiques du build"
+	var weapon_id: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
+	var wdef: Dictionary = GameData.WEAPONS.get(weapon_id, {})
+	_detail_row("Coque", "%d PV" % int(float(GameData.CONFIG.get("hull", 100))))
+	_detail_row("Vitesse", "%.0f" % float(GameData.CONFIG.get("ship_speed", 300)))
+	if not wdef.is_empty():
+		_detail_row("Dégâts combat", "%.1f / tir" % float(wdef.get("damage", 0)))
+		_detail_row("Dégâts miniers", "%.1f / impact" % float(wdef.get("mining_damage", 0)))
+		var cd := float(wdef.get("cooldown", 1.0))
+		_detail_row("Cadence", "%.2f s" % cd if cd > 0 else "Continu")
+
+
+# ==================================================================
+# SECTION : RECHERCHE
+# ==================================================================
+
+func _show_recherche() -> void:
+	_footer_crumb.text = "Hub  /  RECHERCHE"
+	_footer_btn.text   = "ACHETER"
+	_set_footer_orange()
+
+	_content_body.add_child(_content_title("Arbres de compétences"))
+	_content_body.add_child(_content_subtitle("Armement  /  Minage  /  Navigation  /  Logistique"))
+
+	# Onglets arbres
+	var tab_row := MarginContainer.new()
+	for s in ["left","top","bottom"]: tab_row.add_theme_constant_override("margin_"+s, 12)
+	tab_row.add_theme_constant_override("margin_right", 0)
+	_content_body.add_child(tab_row)
+
+	var tabs := HBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 6)
+	tab_row.add_child(tabs)
+
+	for tab_def in [["navigation","Navigation"],["logistique","Logistique"],["armement","Armement"],["minage","Minage"]]:
+		var tid: String  = tab_def[0]
+		var tlbl: String = tab_def[1]
+		var active := tid == _tree_tab
+		var btn := Button.new()
+		btn.text = tlbl
+		btn.custom_minimum_size = Vector2(110, 32)
+		btn.add_theme_font_size_override("font_size", 12)
+		btn.focus_mode = Control.FOCUS_NONE
+		btn.add_theme_stylebox_override("normal", _flat(CYAN.darkened(0.6) if active else BG_ITEM, 6, CYAN if active else BORDER))
+		btn.add_theme_color_override("font_color", INK if active else MUTED)
 		if not active:
-			var captured: String = tab_id
-			tab_btn.pressed.connect(func() -> void:
+			var captured: String = tid
+			btn.pressed.connect(func() -> void:
 				_tree_tab = captured
-				call_deferred("_refresh")
+				_switch_section("recherche")
 			)
-		tabs_row.add_child(tab_btn)
+		tabs.add_child(btn)
 
+	# Liste compétences
+	var list := _content_section("")
 	var inventory: Dictionary = SaveGame.data["inventory"]
 	for id in GameData.SKILLS:
 		var def: Dictionary = GameData.SKILLS[id]
@@ -512,229 +623,544 @@ func _refresh_research() -> void:
 		var res_id:  String = String(def["cost_res"])
 		var cost:      int = int(def["cost"]) * (level + 1)
 		var have:      int = int(inventory.get(res_id, 0))
-		var res_name: String = GameData.RESOURCES[res_id]["name"] if GameData.RESOURCES.has(res_id) else res_id
 		var missing: PackedStringArray = []
 		for prereq_id: String in def.get("prereqs", []):
 			if SaveGame.skill(prereq_id) < 1 and GameData.SKILLS.has(prereq_id):
 				missing.append(GameData.SKILLS[prereq_id]["name"])
-		var locked: bool   = missing.size() > 0
-		var can_buy: bool  = have >= cost and level < max_level and not locked
+		var locked: bool  = missing.size() > 0
+		var maxed: bool   = level >= max_level
+		var is_sel: bool  = id == _selected_skill
+
+		var item := PanelContainer.new()
+		var item_col := BG_SEL if is_sel else BG_ITEM
+		item.add_theme_stylebox_override("panel", _flat(item_col, 6, CYAN if is_sel else BORDER))
+		item.custom_minimum_size = Vector2(0, 52)
+		item.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
 		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		_tree_content.add_child(row)
-
-		var info := VBoxContainer.new()
-		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(info)
+		row.add_theme_constant_override("separation", 10)
+		item.add_child(row)
+		var ml := MarginContainer.new()
+		for s in ["left","right","top","bottom"]: ml.add_theme_constant_override("margin_"+s, 10)
+		row.add_child(ml)
+		var inner := VBoxContainer.new()
+		inner.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		inner.add_theme_constant_override("separation", 2)
+		ml.add_child(inner)
 
 		var dots := ""
-		for i in max_level:
-			dots += "●" if i < level else "○"
+		for i in max_level: dots += "●" if i < level else "○"
 		var name_lbl := Label.new()
-		var name_color := MUTED.darkened(0.4) if locked else (INK if level < max_level else MUTED)
-		_style_label(name_lbl, 14, name_color)
-		name_lbl.text = "%s%s  %s" % ["🔒 " if locked else "", def["name"], dots]
-		info.add_child(name_lbl)
+		name_lbl.text = ("%s  %s  %s" % ["🔒 " if locked else "", def["name"], dots]).strip_edges()
+		name_lbl.add_theme_font_size_override("font_size", 13)
+		name_lbl.add_theme_color_override("font_color", MUTED.darkened(0.3) if locked else (MUTED if maxed else INK))
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inner.add_child(name_lbl)
 
-		var desc_lbl := Label.new()
-		_style_label(desc_lbl, 12, MUTED)
+		var sub_lbl := Label.new()
+		sub_lbl.add_theme_font_size_override("font_size", 11)
+		sub_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		if locked:
-			desc_lbl.text = "Prérequis : %s" % ", ".join(missing)
+			sub_lbl.text = "Prérequis : %s" % "  ·  ".join(missing)
+			sub_lbl.add_theme_color_override("font_color", RED_ERR.darkened(0.2))
+		elif maxed:
+			sub_lbl.text = "Rang maximum atteint"
+			sub_lbl.add_theme_color_override("font_color", GREEN)
 		else:
-			desc_lbl.text = "%s — coût : %d %s" % [def["desc"], cost, res_name]
-		info.add_child(desc_lbl)
+			var res_name: String = GameData.RESOURCES[res_id]["name"] if GameData.RESOURCES.has(res_id) else res_id
+			var ready := have >= cost
+			sub_lbl.text = "Coût : %d %s  —  Stock : %d" % [cost, res_name, have]
+			sub_lbl.add_theme_color_override("font_color", GREEN if ready else MUTED)
+		inner.add_child(sub_lbl)
 
-		var btn: Button
-		if level >= max_level:
-			btn = _small_btn("MAX", false)
-		elif locked:
-			btn = _small_btn("🔒", false)
-		else:
-			btn = _small_btn("%d %s" % [cost, res_name], can_buy)
-			var skill_id: String = id
-			btn.pressed.connect(func() -> void:
-				if SaveGame.buy_skill(skill_id):
-					call_deferred("_refresh")
-			)
-		row.add_child(btn)
-
-		var pinned: Array   = SaveGame.data.get("pinned", [])
-		var is_pinned: bool = id in pinned
-		var pin_btn := _small_btn("✦" if is_pinned else "○ épingler", level < max_level)
-		if is_pinned:
-			pin_btn.add_theme_color_override("font_color", ACCENT)
-		var sid_cap: String = id
-		pin_btn.pressed.connect(func() -> void:
-			var p: Array = SaveGame.data.get("pinned", [])
-			if sid_cap in p: p.erase(sid_cap)
-			else: p.append(sid_cap)
-			SaveGame.data["pinned"] = p
-			SaveGame.save_game()
-			call_deferred("_refresh")
+		var captured_id: String = id
+		item.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+				_selected_skill = captured_id
+				_refresh_skill_detail()
+				_switch_section("recherche")
 		)
-		row.add_child(pin_btn)
+		list.add_child(item)
 
 
-func _refresh_warehouse() -> void:
-	# Vider et reconstruire les chips d'inventaire
-	for child in _inventory_flow.get_children():
-		child.queue_free()
+func _refresh_skill_detail() -> void:
+	_clear_detail()
+	if not GameData.SKILLS.has(_selected_skill):
+		_detail_title.text = "Compétence sélectionnée"
+		return
+	var def: Dictionary = GameData.SKILLS[_selected_skill]
+	_detail_title.text = String(def["name"])
+
+	var level: int     = SaveGame.skill(_selected_skill)
+	var max_level: int = int(def["max"])
+	var res_id: String = String(def["cost_res"])
+	var cost: int      = int(def["cost"]) * (level + 1)
 	var inventory: Dictionary = SaveGame.data["inventory"]
-	var has_items := false
-	for res_id in inventory:
-		var qty := int(inventory.get(res_id, 0))
-		if qty <= 0 or not GameData.RESOURCES.has(res_id):
-			continue
-		has_items = true
-		var res: Dictionary = GameData.RESOURCES[res_id]
-		var chip := _resource_chip(String(res["name"]), qty, Color(res["color"]))
-		_inventory_flow.add_child(chip)
-	if not has_items:
-		var empty_lbl := Label.new()
-		_style_label(empty_lbl, 13, MUTED)
-		empty_lbl.text = "Entrepôt vide."
-		_inventory_flow.add_child(empty_lbl)
+	var have: int      = int(inventory.get(res_id, 0))
+	var res_name: String = GameData.RESOURCES[res_id]["name"] if GameData.RESOURCES.has(res_id) else res_id
 
-	# Objectifs épinglés
-	var pinned_arr: Array    = SaveGame.data.get("pinned", [])
-	var inv_dict: Dictionary = SaveGame.data["inventory"]
-	if pinned_arr.is_empty():
-		_pinned_label.text = "Épinglez des compétences dans l'onglet Recherche."
-	else:
-		var plines: PackedStringArray = []
-		for sid in pinned_arr:
-			if not GameData.SKILLS.has(sid):
-				continue
-			var sdef: Dictionary = GameData.SKILLS[sid]
-			var slevel: int = SaveGame.skill(sid)
-			if slevel >= int(sdef["max"]):
-				plines.append("✓ %s" % sdef["name"])
-				continue
-			var res_id: String   = String(sdef["cost_res"])
-			var cost: int        = int(sdef["cost"]) * (slevel + 1)
-			var have: int        = int(inv_dict.get(res_id, 0))
-			var res_name: String = String(GameData.RESOURCES[res_id]["name"]) if GameData.RESOURCES.has(res_id) else res_id
-			if have >= cost:
-				plines.append("✓ %s  (prêt !)" % sdef["name"])
-			else:
-				plines.append("→ %s : %d / %d %s" % [sdef["name"], have, cost, res_name])
-		_pinned_label.text = "\n".join(plines)
+	_detail_row("Rang actuel", "%d / %d" % [level, max_level])
+	_detail_row("Effet", String(def["desc"]))
+	if level < max_level:
+		_detail_row("Coût prochain rang", "%d %s" % [cost, res_name])
+		_detail_row("En stock", "%d %s" % [have, res_name])
 
+	var missing: PackedStringArray = []
+	for prereq_id: String in def.get("prereqs", []):
+		if SaveGame.skill(prereq_id) < 1 and GameData.SKILLS.has(prereq_id):
+			missing.append(GameData.SKILLS[prereq_id]["name"])
+	_detail_row("Prérequis", "  ·  ".join(missing) if missing.size() > 0 else "Aucun")
 
-func _refresh_archives() -> void:
-	var history: Array      = SaveGame.data["history"]
-	var summary: Dictionary = last_summary if not last_summary.is_empty() \
-		else (history[0] if not history.is_empty() else {})
-	if summary.is_empty():
-		_summary_label.text = "Aucune expédition effectuée."
-	else:
-		var lines: PackedStringArray = []
-		var mins := int(summary.get("seconds", 0)) / 60
-		var secs := int(summary.get("seconds", 0)) % 60
-		var result := "✓ Extraction" if summary.get("success", false) else "✗ Destruction"
-		lines.append("%s  — %02d:%02d  — Niv.%d" % [result, mins, secs, int(summary.get("level", 0))])
-		lines.append("Éliminations : %d" % int(summary.get("kills", 0)))
-		var kept: Dictionary = summary.get("kept", {})
-		for rid in kept:
-			if int(kept[rid]) > 0 and GameData.RESOURCES.has(rid):
-				lines.append("  +%d  %s" % [int(kept[rid]), GameData.RESOURCES[rid]["name"]])
-		_summary_label.text = "\n".join(lines)
+	# Bouton épingler
+	var pinned: Array   = SaveGame.data.get("pinned", [])
+	var is_pinned: bool = _selected_skill in pinned
+	var pin_btn := _action_btn("✦ Désépingler" if is_pinned else "○ Épingler objectif", CYAN if is_pinned else BG_ITEM)
+	var sid_cap: String = _selected_skill
+	pin_btn.pressed.connect(func() -> void:
+		var p: Array = SaveGame.data.get("pinned", [])
+		if sid_cap in p: p.erase(sid_cap)
+		else: p.append(sid_cap)
+		SaveGame.data["pinned"] = p
+		SaveGame.save_game()
+		_refresh_skill_detail()
+	)
+	_detail_body.add_child(pin_btn)
 
-	var gs: Dictionary = SaveGame.data.get("stats", {})
-	var total_runs := int(gs.get("runs", 0))
-	if total_runs == 0:
-		_stats_label.text = "Aucune expédition terminée."
-	else:
-		var total_mins := int(gs.get("seconds", 0)) / 60
-		_stats_label.text = (
-			"%d expéditions\n%d kills\n%d minutes de jeu\n%d ressources récupérées" % [
-			total_runs, int(gs.get("kills", 0)), total_mins, int(gs.get("resources", 0))]
+	# Bouton acheter
+	if level < max_level and missing.is_empty() and have >= cost:
+		var buy_btn := _action_btn("ACHETER", ORANGE)
+		var sid2: String = _selected_skill
+		buy_btn.pressed.connect(func() -> void:
+			if SaveGame.buy_skill(sid2):
+				_switch_section("recherche")
 		)
+		_detail_body.add_child(buy_btn)
 
 
-# --- Helpers UI ----------------------------------------------------
+# ==================================================================
+# SECTION : ENTREPÔT
+# ==================================================================
 
-func _resource_chip(res_name: String, qty: int, col: Color) -> Control:
-	var chip := PanelContainer.new()
-	var chip_bg := col.darkened(0.6)
-	chip_bg.a = 1.0
-	var s := StyleBoxFlat.new()
-	s.bg_color = chip_bg
-	s.border_color = col.darkened(0.2)
-	s.set_border_width_all(2)
-	s.set_corner_radius_all(8)
-	s.content_margin_left  = 10; s.content_margin_right  = 10
-	s.content_margin_top   = 5;  s.content_margin_bottom = 5
-	chip.add_theme_stylebox_override("panel", s)
-	var inner := HBoxContainer.new()
-	inner.add_theme_constant_override("separation", 6)
-	chip.add_child(inner)
-	var dot := Label.new()
-	dot.text = "●"
-	dot.add_theme_font_size_override("font_size", 10)
-	dot.add_theme_color_override("font_color", col)
-	inner.add_child(dot)
+func _show_entrepot() -> void:
+	_footer_crumb.text = "Hub  /  ENTREPÔT"
+	_footer_btn.text   = "VOIR RECHERCHE"
+	_set_footer_muted()
+
+	_content_body.add_child(_content_title("Ressources sécurisées"))
+	_content_body.add_child(_content_subtitle("Stock permanent issu des extractions réussies"))
+
+	var list := _content_section("")
+	var inventory: Dictionary = SaveGame.data["inventory"]
+	var has_any := false
+	for res_id in GameData.RESOURCES:
+		var qty := int(inventory.get(res_id, 0))
+		if qty <= 0:
+			continue
+		has_any = true
+		var res: Dictionary = GameData.RESOURCES[res_id]
+		var is_sel := res_id == _selected_resource
+		var item := PanelContainer.new()
+		item.add_theme_stylebox_override("panel", _flat(BG_SEL if is_sel else BG_ITEM, 6, CYAN if is_sel else BORDER))
+		item.custom_minimum_size = Vector2(0, 48)
+		item.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		var ml := MarginContainer.new()
+		for s in ["left","right","top","bottom"]: ml.add_theme_constant_override("margin_"+s, 12)
+		item.add_child(ml)
+		var row := HBoxContainer.new()
+		ml.add_child(row)
+		var dot := Label.new()
+		dot.text = "●"
+		dot.add_theme_font_size_override("font_size", 12)
+		dot.add_theme_color_override("font_color", Color(res["color"]))
+		dot.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(dot)
+		var name_lbl := Label.new()
+		name_lbl.text = "  %s  ·  %d" % [res["name"], qty]
+		name_lbl.add_theme_font_size_override("font_size", 14)
+		name_lbl.add_theme_color_override("font_color", INK)
+		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.add_child(name_lbl)
+		var captured_rid: String = res_id
+		item.gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+				_selected_resource = captured_rid
+				_refresh_resource_detail()
+				_switch_section("entrepot")
+		)
+		list.add_child(item)
+	if not has_any:
+		var empty := Label.new()
+		empty.text = "Entrepôt vide. Termine une expédition pour sécuriser des ressources."
+		empty.add_theme_font_size_override("font_size", 13)
+		empty.add_theme_color_override("font_color", MUTED)
+		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		list.add_child(empty)
+
+	if _selected_resource != "":
+		_refresh_resource_detail()
+
+
+func _refresh_resource_detail() -> void:
+	_clear_detail()
+	if not GameData.RESOURCES.has(_selected_resource):
+		return
+	var res: Dictionary = GameData.RESOURCES[_selected_resource]
+	_detail_title.text = String(res["name"])
+
+	var inventory: Dictionary = SaveGame.data["inventory"]
+	var qty := int(inventory.get(_selected_resource, 0))
+	_detail_row("Quantité", "%d unités" % qty)
+	_detail_row("Rareté", "Rare" if bool(res.get("rare", false)) else "Commune")
+	_detail_row("Valeur de base", "%d" % int(res.get("base", 0)))
+
+	# Provenance
+	var sources: PackedStringArray = []
+	for pid in GameData.PLANETS:
+		var planet: Dictionary = GameData.PLANETS[pid]
+		if String(planet.get("res", "")) == _selected_resource or String(planet.get("rare", "")) == _selected_resource:
+			sources.append(String(planet["name"]))
+		var excl: Array = planet.get("exclusive", [])
+		if _selected_resource in excl and not String(planet["name"]) in sources:
+			sources.append(String(planet["name"]))
+	if sources.size() > 0:
+		_detail_row("Provenance", "  ·  ".join(sources))
+
+	# Utilisé dans
+	var used_in: PackedStringArray = []
+	for sid in GameData.SKILLS:
+		var sdef: Dictionary = GameData.SKILLS[sid]
+		if String(sdef.get("cost_res", "")) == _selected_resource:
+			used_in.append(String(sdef["name"]))
+	if used_in.size() > 0:
+		_detail_row("Utilisé dans", ", ".join(used_in))
+
+	var goto_btn := _action_btn("VOIR RECHERCHE", CYAN.darkened(0.3))
+	goto_btn.pressed.connect(func() -> void: _switch_section("recherche"))
+	_detail_body.add_child(goto_btn)
+
+
+# ==================================================================
+# SECTION : ARCHIVES
+# ==================================================================
+
+func _show_archives() -> void:
+	_footer_crumb.text = "Hub  /  ARCHIVES"
+	_footer_btn.text   = "VOIR BILAN"
+	_set_footer_muted()
+
+	_content_body.add_child(_content_title("Statistiques et historique"))
+
+	# Stats globales
+	var gs: Dictionary = SaveGame.data.get("stats", {})
+	var runs := int(gs.get("runs", 0))
+	var kills := int(gs.get("kills", 0))
+	var mins  := int(gs.get("seconds", 0)) / 60
+	var rsrc  := int(gs.get("resources", 0))
+	var stat_lbl := Label.new()
+	stat_lbl.text = "%d expéditions  ·  %d éliminations  ·  %d min  ·  %d ressources" % [runs, kills, mins, rsrc]
+	stat_lbl.add_theme_font_size_override("font_size", 12)
+	stat_lbl.add_theme_color_override("font_color", MUTED)
+	var sm := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: sm.add_theme_constant_override("margin_"+s, 12)
+	sm.add_child(stat_lbl)
+	_content_body.add_child(sm)
+
+	var list := _content_section("")
+	var history: Array = SaveGame.data.get("history", [])
+	if history.is_empty():
+		var empty := Label.new()
+		empty.text = "Aucune expédition terminée."
+		empty.add_theme_font_size_override("font_size", 13)
+		empty.add_theme_color_override("font_color", MUTED)
+		list.add_child(empty)
+	else:
+		for i in history.size():
+			var run: Dictionary = history[i]
+			var success: bool = run.get("success", false)
+			var planet_id: String = String(run.get("planet", ""))
+			var planet_name: String = GameData.PLANETS[planet_id]["name"] if GameData.PLANETS.has(planet_id) else planet_id
+			var mins_r := int(run.get("seconds", 0)) / 60
+			var secs_r := int(run.get("seconds", 0)) % 60
+			var is_sel := i == _selected_run_idx
+
+			var item := PanelContainer.new()
+			item.add_theme_stylebox_override("panel", _flat(BG_SEL if is_sel else BG_ITEM, 6, CYAN if is_sel else BORDER))
+			item.custom_minimum_size = Vector2(0, 48)
+			item.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+			var ml := MarginContainer.new()
+			for s in ["left","right","top","bottom"]: ml.add_theme_constant_override("margin_"+s, 12)
+			item.add_child(ml)
+			var lbl := Label.new()
+			lbl.text = "Expédition %03d  ·  %s  ·  %s — %02d:%02d" % [
+				history.size() - i, "Extraction" if success else "Échec", planet_name, mins_r, secs_r]
+			lbl.add_theme_font_size_override("font_size", 13)
+			lbl.add_theme_color_override("font_color", GREEN if success else RED_ERR.lightened(0.1))
+			lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			ml.add_child(lbl)
+			var captured_i: int = i
+			item.gui_input.connect(func(event: InputEvent) -> void:
+				if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+					_selected_run_idx = captured_i
+					_refresh_run_detail(history[captured_i])
+					_switch_section("archives")
+			)
+			list.add_child(item)
+
+	if _selected_run_idx >= 0 and _selected_run_idx < history.size():
+		_refresh_run_detail(history[_selected_run_idx])
+
+
+func _refresh_run_detail(run: Dictionary) -> void:
+	_clear_detail()
+	var success: bool = run.get("success", false)
+	_detail_title.text = "Extraction réussie" if success else "Vaisseau détruit"
+	_detail_title.add_theme_color_override("font_color", GREEN if success else RED_ERR)
+	var planet_id: String = String(run.get("planet", ""))
+	var planet_name: String = GameData.PLANETS[planet_id]["name"] if GameData.PLANETS.has(planet_id) else planet_id
+	_detail_row("Planète", planet_name)
+	_detail_row("Difficulté", "%d" % int(run.get("difficulty", 1)))
+	var mins := int(run.get("seconds", 0)) / 60
+	var secs := int(run.get("seconds", 0)) % 60
+	_detail_row("Durée", "%02d:%02d" % [mins, secs])
+	_detail_row("Niveau atteint", "%d" % int(run.get("level", 0)))
+	_detail_row("Éliminations", "%d" % int(run.get("kills", 0)))
+	var weapon_id: String = String(run.get("weapon", ""))
+	if GameData.WEAPONS.has(weapon_id):
+		_detail_row("Arme", GameData.WEAPONS[weapon_id]["name"])
+	var kept: Dictionary = run.get("kept", {})
+	var kept_parts: PackedStringArray = []
+	for rid in kept:
+		if int(kept[rid]) > 0 and GameData.RESOURCES.has(rid):
+			kept_parts.append("+%d %s" % [int(kept[rid]), GameData.RESOURCES[rid]["name"]])
+	if kept_parts.size() > 0:
+		_detail_row("Butin sécurisé", "\n".join(kept_parts))
+
+
+# ==================================================================
+# SECTION : PARAMÈTRES
+# ==================================================================
+
+func _show_parametres() -> void:
+	_footer_crumb.text = "Hub  /  PARAMÈTRES"
+	_footer_btn.text   = "APPLIQUER"
+	_set_footer_muted()
+
+	_content_body.add_child(_content_title("Configuration"))
+	_content_body.add_child(_content_subtitle("Options de jeu"))
+
+	var col := _content_section("")
+	var defs: Array = [
+		{"key": "control_mode", "label": "Mode de pilotage",
+			"opts": [["Libre", "free"], ["Avec inertie", "inertia"]]},
+		{"key": "auto_fire", "label": "Tir automatique",
+			"opts": [["Manuel", false], ["Automatique", true]]},
+	]
+	for d: Dictionary in defs:
+		var grp := VBoxContainer.new()
+		grp.add_theme_constant_override("separation", 4)
+		col.add_child(grp)
+		var lbl := Label.new()
+		lbl.text = String(d["label"])
+		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_color_override("font_color", MUTED)
+		grp.add_child(lbl)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		grp.add_child(row)
+		var key: String = String(d["key"])
+		_param_btns[key] = []
+		for opt: Array in d["opts"]:
+			var opt_lbl: String  = opt[0]
+			var opt_val: Variant = opt[1]
+			var options: Dictionary = SaveGame.data["options"]
+			var sel := options.get(key) == opt_val
+			var btn := Button.new()
+			btn.text = opt_lbl
+			btn.custom_minimum_size = Vector2(140, 36)
+			btn.add_theme_font_size_override("font_size", 13)
+			btn.focus_mode = Control.FOCUS_NONE
+			btn.add_theme_stylebox_override("normal", _flat(BG_SEL if sel else BG_ITEM, 6, CYAN if sel else BORDER))
+			btn.add_theme_color_override("font_color", INK if sel else MUTED)
+			var k: String = key; var v: Variant = opt_val
+			btn.pressed.connect(func() -> void:
+				SaveGame.data["options"][k] = v
+				SaveGame.save_game()
+				_switch_section("parametres")
+			)
+			row.add_child(btn)
+			_param_btns[key].append({"value": opt_val, "btn": btn})
+
+
+# ==================================================================
+# FOOTER CALLBACK
+# ==================================================================
+
+func _on_footer_btn() -> void:
+	match _current_section:
+		"navigation":
+			run_started.emit(_selected_planet, _selected_difficulty)
+		"hangar":
+			SaveGame.save_game()
+		"recherche":
+			if _selected_skill != "" and GameData.SKILLS.has(_selected_skill):
+				if SaveGame.buy_skill(_selected_skill):
+					_switch_section("recherche")
+		"entrepot":
+			_switch_section("recherche")
+		"archives":
+			pass  # future : voir bilan détaillé
+		"parametres":
+			SaveGame.save_game()
+
+	if SaveGame.has_run_save() and _current_section == "navigation":
+		run_resumed.emit()
+
+
+# ==================================================================
+# HELPERS UI
+# ==================================================================
+
+func _content_title(text: String) -> Control:
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 20)
+	m.add_theme_constant_override("margin_top", 20)
+	m.add_theme_constant_override("margin_bottom", 4)
 	var lbl := Label.new()
-	lbl.text = "%s  %d" % [res_name, qty]
-	lbl.add_theme_font_size_override("font_size", 13)
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 22)
 	lbl.add_theme_color_override("font_color", INK)
-	inner.add_child(lbl)
-	return chip
+	m.add_child(lbl)
+	return m
 
 
-func _small_btn(label: String, active: bool) -> Button:
+func _content_subtitle(text: String) -> Control:
+	var m := MarginContainer.new()
+	m.add_theme_constant_override("margin_left", 20)
+	m.add_theme_constant_override("margin_bottom", 12)
+	var lbl := Label.new()
+	lbl.text = text.to_upper()
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", MUTED)
+	m.add_child(lbl)
+	return m
+
+
+func _content_section(title: String) -> VBoxContainer:
+	var wrapper := MarginContainer.new()
+	for s in ["left","right","top","bottom"]: wrapper.add_theme_constant_override("margin_"+s, 12)
+	_content_body.add_child(wrapper)
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 6)
+	wrapper.add_child(col)
+	if title != "":
+		var lbl := Label.new()
+		lbl.text = title.to_upper()
+		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_color_override("font_color", MUTED)
+		col.add_child(lbl)
+	return col
+
+
+func _detail_row(label: String, value: String) -> void:
+	var col := VBoxContainer.new()
+	col.add_theme_constant_override("separation", 1)
+	_detail_body.add_child(col)
+	var l := Label.new()
+	l.text = label.to_upper()
+	l.add_theme_font_size_override("font_size", 10)
+	l.add_theme_color_override("font_color", MUTED)
+	col.add_child(l)
+	var v := Label.new()
+	v.text = value
+	v.add_theme_font_size_override("font_size", 13)
+	v.add_theme_color_override("font_color", INK)
+	v.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	col.add_child(v)
+
+
+func _action_btn(text: String, col: Color) -> Button:
 	var btn := Button.new()
-	btn.text = label
-	btn.custom_minimum_size = Vector2(110, 32)
+	btn.text = text
+	btn.custom_minimum_size = Vector2(0, 36)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.add_theme_font_size_override("font_size", 12)
-	btn.disabled = not active
 	btn.focus_mode = Control.FOCUS_NONE
-	var col := DIM if active else Color("1e1210")
-	btn.add_theme_stylebox_override("normal", _box(col, 8, 1))
-	btn.add_theme_stylebox_override("hover",  _box(col.lerp(Color.WHITE, 0.1), 8, 1))
-	btn.add_theme_color_override("font_color", INK if active else MUTED)
+	btn.add_theme_stylebox_override("normal", _flat(col.darkened(0.3), 6, col))
+	btn.add_theme_stylebox_override("hover",  _flat(col.darkened(0.1), 6, col))
+	btn.add_theme_color_override("font_color", INK)
 	return btn
 
 
-func _section(parent: Node, title: String, expand: bool = true) -> VBoxContainer:
-	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", _box(PANEL, 12, 1))
-	if expand:
-		panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	parent.add_child(panel)
-	var outer := VBoxContainer.new()
-	outer.add_theme_constant_override("separation", 8)
-	panel.add_child(outer)
-	var title_lbl := Label.new()
-	_style_label(title_lbl, 12, ACCENT)
-	title_lbl.text = title.to_upper()
-	outer.add_child(title_lbl)
-	var sep := HSeparator.new()
-	var sep_style := StyleBoxFlat.new()
-	sep_style.bg_color = ACCENT.darkened(0.6)
-	sep_style.content_margin_top = 1; sep_style.content_margin_bottom = 1
-	sep.add_theme_stylebox_override("separator", sep_style)
-	outer.add_child(sep)
-	var content := VBoxContainer.new()
-	content.add_theme_constant_override("separation", 6)
-	outer.add_child(content)
-	return content
+func _set_footer_orange() -> void:
+	_footer_btn.add_theme_stylebox_override("normal",  _flat(ORANGE, 8, Color(ORANGE, 0.0)))
+	_footer_btn.add_theme_stylebox_override("hover",   _flat(ORANGE.lightened(0.15), 8, Color(ORANGE, 0.0)))
+	_footer_btn.add_theme_stylebox_override("pressed", _flat(ORANGE.darkened(0.2), 8, Color(ORANGE, 0.0)))
+	_footer_btn.add_theme_color_override("font_color", Color("1a0d0a"))
 
 
-func _style_label(label: Label, size: int, color: Color) -> void:
-	label.add_theme_font_size_override("font_size", size)
-	label.add_theme_color_override("font_color", color)
+func _set_footer_muted() -> void:
+	_footer_btn.add_theme_stylebox_override("normal",  _flat(BG_ITEM, 8, BORDER))
+	_footer_btn.add_theme_stylebox_override("hover",   _flat(BG_SEL, 8, BORDER))
+	_footer_btn.add_theme_stylebox_override("pressed", _flat(BG_SEL.lightened(0.1), 8, BORDER))
+	_footer_btn.add_theme_color_override("font_color", MUTED)
 
 
-func _box(color: Color, radius: int, border: int = 2) -> StyleBoxFlat:
-	var box := StyleBoxFlat.new()
-	box.bg_color     = color
-	box.border_color = DrawUtils.OUTLINE
-	box.set_border_width_all(border)
-	box.set_corner_radius_all(radius)
-	box.content_margin_left   = 12
-	box.content_margin_right  = 12
-	box.content_margin_top    = 8
-	box.content_margin_bottom = 8
-	return box
+func _flat(col: Color, radius: int, border: Color = BORDER, border_sides: Array = []) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = col
+	s.border_color = border
+	if border_sides.is_empty():
+		s.set_border_width_all(1)
+	else:
+		# [top, right, bottom, left]
+		s.border_width_top    = border_sides[0]
+		s.border_width_right  = border_sides[1] if border_sides.size() > 1 else 0
+		s.border_width_bottom = border_sides[2] if border_sides.size() > 2 else 0
+		s.border_width_left   = border_sides[3] if border_sides.size() > 3 else 0
+	s.set_corner_radius_all(radius)
+	s.content_margin_left   = 10
+	s.content_margin_right  = 10
+	s.content_margin_top    = 6
+	s.content_margin_bottom = 6
+	return s
+
+
+# ==================================================================
+# INNER CLASS : carte des planètes avec lignes dessinées
+# ==================================================================
+
+class _PlanetMapDraw extends Control:
+	var node_positions: Dictionary = {}
+	var node_buttons:   Dictionary = {}
+	var edges:          Array = []
+	var selected_planet := ""
+
+	const LINE_COL    := Color(0.3, 0.5, 0.7, 0.5)
+	const LINE_COL_ON := Color(0.24, 0.8, 0.8, 0.8)
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_PASS
+
+	func _process(_delta: float) -> void:
+		# Positionner les boutons selon les coordonnées normalisées
+		for pid in node_buttons:
+			var btn: Button = node_buttons[pid]
+			if not node_positions.has(pid):
+				continue
+			var npos: Vector2 = node_positions[pid]
+			var bsize := btn.get_minimum_size()
+			btn.position = Vector2(npos.x * size.x, npos.y * size.y) - bsize * 0.5
+			btn.size = bsize
+
+	func _draw() -> void:
+		for edge in edges:
+			var a: String = edge[0]
+			var b: String = edge[1]
+			if not (node_positions.has(a) and node_positions.has(b)):
+				continue
+			var pa := node_positions[a] * size
+			var pb := node_positions[b] * size
+			var on := (a == selected_planet or b == selected_planet)
+			draw_line(pa, pb, LINE_COL_ON if on else LINE_COL, 2.0, true)
