@@ -29,7 +29,8 @@ func _physics_process(delta: float) -> void:
 	if is_instance_valid(target):
 		var to   := target.position - position
 		var dist := to.length()
-		var magnet := float(GameData.CONFIG["magnet_radius"]) \
+		var ship_pickup: float = float(GameData.SHIPS.get(RunState.ship_id, GameData.SHIPS["polyvalent"])["pickup_radius"])
+		var magnet := ship_pickup \
 			* (1.0 + 0.3 * SaveGame.skill("magnet")) \
 			* (1.0 + 0.5 * RunState.run_upgrade_level("magnet"))
 		if dist < magnet and dist > 0.1:

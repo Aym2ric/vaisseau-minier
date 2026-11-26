@@ -49,7 +49,8 @@ func _physics_process(delta: float) -> void:
 
 	var planet    := RunState.planet()
 	var friction: float = planet["friction"]
-	var max_speed: float = float(GameData.CONFIG["ship_speed"]) \
+	var sdef: Dictionary = GameData.SHIPS.get(RunState.ship_id, GameData.SHIPS["polyvalent"])
+	var max_speed: float = float(sdef["speed"]) \
 		* (1.0 + 0.08 * SaveGame.skill("thrust")) \
 		* (1.0 + 0.15 * RunState.run_upgrade_level("speed"))
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
@@ -70,7 +71,7 @@ func _physics_process(delta: float) -> void:
 		if auto_fire:
 			auto_aimed = _nearest_target() != Vector2.ZERO
 	else:
-		velocity += move * float(GameData.CONFIG["ship_accel"]) * delta
+		velocity += move * float(sdef["accel"]) * delta
 		thrusting = move.length() > 0.1
 		velocity *= exp(-friction * delta * (0.35 if thrusting else 1.0))
 		var has_target := false

@@ -30,24 +30,33 @@ var _selected_resource   := ""
 var _selected_run_idx    := -1
 var _tree_tab            := "navigation"
 
-# --- Refs UI ---
-var _sidebar_btns:    Dictionary = {}
-var _content_scroll:  ScrollContainer
-var _content_body:    VBoxContainer
-var _detail_title:    Label
-var _detail_body:     VBoxContainer
-var _footer_crumb:    Label
-var _footer_btn:      Button
-var _planet_map:      Control
-var _diff_btns:       Array = []
-var _weapon_btns:     Array = []
-var _param_btns:      Dictionary = {}
-var _skill_rows:      Dictionary = {}
+# --- Refs shell (nœuds définis dans hub.tscn) ---
+@onready var _content_scroll: ScrollContainer = $Root/Body/ContentWrapper/ContentCol/ContentScroll
+@onready var _content_body:   VBoxContainer   = $Root/Body/ContentWrapper/ContentCol/ContentScroll/ContentBody
+@onready var _detail_title:   Label           = $Root/Body/DetailPanel/DetailMargin/DetailCol/DetailTitle
+@onready var _detail_body:    VBoxContainer   = $Root/Body/DetailPanel/DetailMargin/DetailCol/DetailBody
+@onready var _footer_crumb:   Label           = $Root/Footer/FooterRow/FooterLeft/FooterCrumb
+@onready var _footer_btn:     Button          = $Root/Footer/FooterRow/FooterRight/FooterBtn
+@onready var _side_col:       VBoxContainer   = $Root/Body/Sidebar/SideMargin/SideCol
+
+# --- Refs dynamiques ---
+var _sidebar_btns: Dictionary = {}
+var _planet_map:   Control
+var _diff_btns:    Array = []
+var _weapon_btns:  Array = []
+var _param_btns:   Dictionary = {}
+var _skill_rows:   Dictionary = {}
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	_build_shell()
+	# Force la taille au viewport (anchors_preset calculé à taille 0 à l'instantiation)
+	var vp := get_viewport_rect().size
+	size = vp
+	$BG.size   = vp
+	$Root.size = vp
+
+	_apply_theme()
+	_build_sidebar_buttons()
 
 	var unlocked: Dictionary = SaveGame.data["unlocked"]
 	var prev: String = String(SaveGame.data["selected_planet"])
@@ -58,80 +67,33 @@ func _ready() -> void:
 
 
 # ==================================================================
-# SHELL : header / sidebar / content / detail / footer
+# SHELL : thème + boutons sidebar (structure définie dans hub.tscn)
 # ==================================================================
 
-func _build_shell() -> void:
-	var root := VBoxContainer.new()
-	root.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 0)
-	add_child(root)
-
-	_add_bg(root)
-	_build_header(root)
-
-	var body := HBoxContainer.new()
-	body.add_theme_constant_override("separation", 0)
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root.add_child(body)
-
-	_build_sidebar(body)
-	_build_content_area(body)
-	_build_detail_panel(body)
-	_build_footer(root)
-
-
-func _add_bg(parent: Node) -> void:
-	var bg := ColorRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.color = BG
-	add_child(bg)
+func _apply_theme() -> void:
+	$BG.color = BG
+	$Root/Header.add_theme_stylebox_override("panel",
+		_flat(BG_SIDE, 0, Color(BORDER, 1.0), [0,0,1,0]))
+	$Root/Header/HeaderRow/HeaderLeft/HeaderTitle.add_theme_font_size_override("font_size", 20)
+	$Root/Header/HeaderRow/HeaderLeft/HeaderTitle.add_theme_color_override("font_color", INK)
+	$Root/Header/HeaderRow/HeaderRight/HeaderLinks.add_theme_font_size_override("font_size", 13)
+	$Root/Header/HeaderRow/HeaderRight/HeaderLinks.add_theme_color_override("font_color", CYAN)
+	$Root/Body/Sidebar.add_theme_stylebox_override("panel",
+		_flat(BG_SIDE, 0, Color(BORDER, 1.0), [0,1,0,0]))
+	$Root/Body/ContentWrapper.add_theme_stylebox_override("panel", _flat(BG, 0, Color(BORDER, 0.0)))
+	$Root/Body/DetailPanel.add_theme_stylebox_override("panel",
+		_flat(BG_PANEL, 0, Color(BORDER, 1.0), [0,0,0,1]))
+	_detail_title.add_theme_font_size_override("font_size", 16)
+	_detail_title.add_theme_color_override("font_color", CYAN)
+	$Root/Footer.add_theme_stylebox_override("panel",
+		_flat(BG_SIDE, 0, Color(BORDER, 1.0), [1,0,0,0]))
+	_footer_crumb.add_theme_font_size_override("font_size", 13)
+	_footer_crumb.add_theme_color_override("font_color", MUTED)
+	_footer_btn.add_theme_font_size_override("font_size", 16)
+	_footer_btn.pressed.connect(_on_footer_btn)
 
 
-func _build_header(parent: Node) -> void:
-	var bar := PanelContainer.new()
-	bar.add_theme_stylebox_override("panel", _flat(BG_SIDE, 0, Color(BORDER, 1.0), [0,0,0,1]))
-	parent.add_child(bar)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 0)
-	bar.add_child(row)
-
-	var m := MarginContainer.new()
-	m.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for s in ["left","right","top","bottom"]: m.add_theme_constant_override("margin_"+s, 16)
-	row.add_child(m)
-
-	var title := Label.new()
-	title.text = "VAISSEAU MINIER  /  VAISSEAU-MÈRE"
-	title.add_theme_font_size_override("font_size", 20)
-	title.add_theme_color_override("font_color", INK)
-	m.add_child(title)
-
-	var mr := MarginContainer.new()
-	for s in ["left","right","top","bottom"]: mr.add_theme_constant_override("margin_"+s, 16)
-	row.add_child(mr)
-	var links := Label.new()
-	links.text = "STOCK  ·  PROFIL"
-	links.add_theme_font_size_override("font_size", 13)
-	links.add_theme_color_override("font_color", CYAN)
-	links.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	mr.add_child(links)
-
-
-func _build_sidebar(parent: Node) -> void:
-	var side := PanelContainer.new()
-	side.add_theme_stylebox_override("panel", _flat(BG_SIDE, 0, Color(BORDER, 1.0), [0,0,0,1]))
-	side.custom_minimum_size = Vector2(170, 0)
-	parent.add_child(side)
-
-	var margin := MarginContainer.new()
-	for s in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+s, 12)
-	side.add_child(margin)
-
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 4)
-	margin.add_child(col)
-
+func _build_sidebar_buttons() -> void:
 	var sections := [
 		["navigation", "NAVIGATION"],
 		["hangar",     "HANGAR"],
@@ -151,93 +113,11 @@ func _build_sidebar(parent: Node) -> void:
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var captured: String = sid
 		btn.pressed.connect(func() -> void: _switch_section(captured))
-		col.add_child(btn)
+		_side_col.add_child(btn)
 		_sidebar_btns[sid] = btn
-
-	# Spacer
 	var sp := Control.new()
 	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(sp)
-
-
-func _build_content_area(parent: Node) -> void:
-	var wrapper := PanelContainer.new()
-	wrapper.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wrapper.add_theme_stylebox_override("panel", _flat(BG, 0))
-	parent.add_child(wrapper)
-
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 0)
-	wrapper.add_child(col)
-
-	_content_scroll = ScrollContainer.new()
-	_content_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_content_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	col.add_child(_content_scroll)
-
-	_content_body = VBoxContainer.new()
-	_content_body.add_theme_constant_override("separation", 0)
-	_content_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_content_scroll.add_child(_content_body)
-
-
-func _build_detail_panel(parent: Node) -> void:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(260, 0)
-	panel.add_theme_stylebox_override("panel", _flat(BG_PANEL, 0, Color(BORDER, 1.0), [1,0,0,0]))
-	parent.add_child(panel)
-
-	var margin := MarginContainer.new()
-	for s in ["left","right","top","bottom"]: margin.add_theme_constant_override("margin_"+s, 20)
-	panel.add_child(margin)
-
-	var col := VBoxContainer.new()
-	col.add_theme_constant_override("separation", 10)
-	margin.add_child(col)
-
-	_detail_title = Label.new()
-	_detail_title.add_theme_font_size_override("font_size", 16)
-	_detail_title.add_theme_color_override("font_color", CYAN)
-	_detail_title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	col.add_child(_detail_title)
-
-	_detail_body = VBoxContainer.new()
-	_detail_body.add_theme_constant_override("separation", 8)
-	_detail_body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	col.add_child(_detail_body)
-
-
-func _build_footer(parent: Node) -> void:
-	var bar := PanelContainer.new()
-	bar.add_theme_stylebox_override("panel", _flat(BG_SIDE, 0, Color(BORDER, 1.0), [1,0,0,0]))
-	parent.add_child(bar)
-
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 16)
-	bar.add_child(row)
-
-	var ml := MarginContainer.new()
-	ml.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	for s in ["left","right","top","bottom"]: ml.add_theme_constant_override("margin_"+s, 16)
-	row.add_child(ml)
-
-	_footer_crumb = Label.new()
-	_footer_crumb.add_theme_font_size_override("font_size", 13)
-	_footer_crumb.add_theme_color_override("font_color", MUTED)
-	_footer_crumb.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ml.add_child(_footer_crumb)
-
-	var mr := MarginContainer.new()
-	for s in ["left","right","top","bottom"]: mr.add_theme_constant_override("margin_"+s, 10)
-	row.add_child(mr)
-
-	_footer_btn = Button.new()
-	_footer_btn.custom_minimum_size = Vector2(240, 48)
-	_footer_btn.add_theme_font_size_override("font_size", 16)
-	_footer_btn.add_theme_color_override("font_color", Color("1a0d0a"))
-	_footer_btn.focus_mode = Control.FOCUS_NONE
-	_footer_btn.pressed.connect(_on_footer_btn)
-	mr.add_child(_footer_btn)
+	_side_col.add_child(sp)
 
 
 # ==================================================================
@@ -265,7 +145,7 @@ func _switch_section(section: String) -> void:
 func _refresh_sidebar() -> void:
 	for sid in _sidebar_btns:
 		var btn: Button = _sidebar_btns[sid]
-		var active := sid == _current_section
+		var active: bool = sid == _current_section
 		btn.add_theme_stylebox_override("normal",  _flat(CYAN.darkened(0.6) if active else Color(BG_SIDE, 0.0), 6, Color(CYAN if active else BORDER, 1.0), [0,0,0,0]))
 		btn.add_theme_stylebox_override("hover",   _flat(Color(CYAN, 0.15), 6))
 		btn.add_theme_stylebox_override("pressed", _flat(Color(CYAN, 0.2), 6))
@@ -487,15 +367,28 @@ func _show_hangar() -> void:
 
 	var col := _content_section("")
 
-	# Vaisseau (Pioneer fixe pour l'instant)
-	col.add_child(_slot_row("Vaisseau", "Pioneer", false))
+	# Vaisseau
+	var selected_ship: String = String(SaveGame.data.get("selected_ship", "polyvalent"))
+	for ship_id in GameData.SHIPS:
+		var sdef: Dictionary = GameData.SHIPS[ship_id]
+		var is_sel: bool = ship_id == selected_ship
+		var row := _slot_row("Vaisseau", String(sdef["name"]), true)
+		(row as PanelContainer).add_theme_stylebox_override("panel", _flat(BG_SEL if is_sel else BG_ITEM, 6, CYAN if is_sel else BORDER))
+		var cap_ship: String = ship_id
+		(row as PanelContainer).gui_input.connect(func(event: InputEvent) -> void:
+			if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+				SaveGame.data["selected_ship"] = cap_ship
+				SaveGame.save_game()
+				_switch_section("hangar")
+		)
+		col.add_child(row)
 
 	# Arme
 	var equipped_weapon: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
 	_weapon_btns.clear()
 	for id in GameData.WEAPONS:
 		var def: Dictionary = GameData.WEAPONS[id]
-		var is_sel := id == equipped_weapon
+		var is_sel: bool = id == equipped_weapon
 		var row := _slot_row("Arme", String(def["name"]), true)
 		# Teinter selon sélection
 		var style_col := Color(BG_SEL if is_sel else BG_ITEM)
@@ -559,16 +452,23 @@ func _slot_row(label: String, value: String, clickable: bool, unlocked: bool = t
 func _refresh_hangar_detail() -> void:
 	_clear_detail()
 	_detail_title.text = "Statistiques du build"
+	var ship_id_d: String = String(SaveGame.data.get("selected_ship", "polyvalent"))
+	var sdef: Dictionary = GameData.SHIPS.get(ship_id_d, GameData.SHIPS["polyvalent"])
 	var weapon_id: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
 	var wdef: Dictionary = GameData.WEAPONS.get(weapon_id, {})
-	_detail_row("Coque", "%d PV" % int(float(GameData.CONFIG.get("hull", 100))))
-	_detail_row("Vitesse", "%.0f" % float(GameData.CONFIG.get("ship_speed", 300)))
+	_detail_title.text = String(sdef["name"])
+	_detail_row("Coque", "%d PV" % int(float(sdef["hull"])))
+	_detail_row("Vitesse", "%.0f" % float(sdef["speed"]))
+	_detail_row("Ramassage", "%.0f px" % float(sdef["pickup_radius"]))
+	_detail_row("Combat ×", "%.1f" % float(sdef["combat_mult"]))
+	_detail_row("Minage ×", "%.1f" % float(sdef["mining_mult"]))
 	if not wdef.is_empty():
-		_detail_row("Dégâts combat", "%.1f / tir" % float(wdef.get("damage", 0)))
-		_detail_row("Dégâts miniers", "%.1f / impact" % float(wdef.get("mining_damage", 0)))
+		_detail_row("Arme", String(wdef["name"]))
+		_detail_row("Dégâts combat", "%.1f" % (float(wdef.get("damage", 0)) * float(sdef["combat_mult"])))
+		_detail_row("Dégâts minage", "%.1f" % (float(wdef.get("mining_damage", 0)) * float(sdef["mining_mult"])))
 		var cd := float(wdef.get("cooldown", 1.0))
-		_detail_row("Cadence", "%.2f s" % cd if cd > 0 else "Continu")
-
+		_detail_row("Cadence", "%.2f s" % cd if cd > 0.0 else "Continu")
+	_detail_row("Description", String(sdef["desc"]))
 
 # ==================================================================
 # SECTION : RECHERCHE
@@ -595,7 +495,7 @@ func _show_recherche() -> void:
 	for tab_def in [["navigation","Navigation"],["logistique","Logistique"],["armement","Armement"],["minage","Minage"]]:
 		var tid: String  = tab_def[0]
 		var tlbl: String = tab_def[1]
-		var active := tid == _tree_tab
+		var active: bool = tid == _tree_tab
 		var btn := Button.new()
 		btn.text = tlbl
 		btn.custom_minimum_size = Vector2(110, 32)
@@ -758,7 +658,7 @@ func _show_entrepot() -> void:
 			continue
 		has_any = true
 		var res: Dictionary = GameData.RESOURCES[res_id]
-		var is_sel := res_id == _selected_resource
+		var is_sel: bool = res_id == _selected_resource
 		var item := PanelContainer.new()
 		item.add_theme_stylebox_override("panel", _flat(BG_SEL if is_sel else BG_ITEM, 6, CYAN if is_sel else BORDER))
 		item.custom_minimum_size = Vector2(0, 48)
@@ -883,7 +783,7 @@ func _show_archives() -> void:
 			var planet_name: String = GameData.PLANETS[planet_id]["name"] if GameData.PLANETS.has(planet_id) else planet_id
 			var mins_r := int(run.get("seconds", 0)) / 60
 			var secs_r := int(run.get("seconds", 0)) % 60
-			var is_sel := i == _selected_run_idx
+			var is_sel: bool = i == _selected_run_idx
 
 			var item := PanelContainer.new()
 			item.add_theme_stylebox_override("panel", _flat(BG_SEL if is_sel else BG_ITEM, 6, CYAN if is_sel else BORDER))
@@ -975,7 +875,7 @@ func _show_parametres() -> void:
 			var opt_lbl: String  = opt[0]
 			var opt_val: Variant = opt[1]
 			var options: Dictionary = SaveGame.data["options"]
-			var sel := options.get(key) == opt_val
+			var sel: bool = options.get(key) == opt_val
 			var btn := Button.new()
 			btn.text = opt_lbl
 			btn.custom_minimum_size = Vector2(140, 36)
@@ -1160,7 +1060,7 @@ class _PlanetMapDraw extends Control:
 			var b: String = edge[1]
 			if not (node_positions.has(a) and node_positions.has(b)):
 				continue
-			var pa := node_positions[a] * size
-			var pb := node_positions[b] * size
-			var on := (a == selected_planet or b == selected_planet)
+			var pa: Vector2 = node_positions[a] * size
+			var pb: Vector2 = node_positions[b] * size
+			var on: bool = (a == selected_planet or b == selected_planet)
 			draw_line(pa, pb, LINE_COL_ON if on else LINE_COL, 2.0, true)

@@ -19,6 +19,7 @@ func default_data() -> Dictionary:
 		"found": {"fer": true},
 		"weapons": {"blaster": true},
 		"equipped": {"weapon": "blaster"},
+		"selected_ship": "polyvalent",
 		"selected_planet": "roc",
 		"selected_difficulty": 1,
 		"difficulties": {"roc": 1},  # max difficulté débloquée par planète

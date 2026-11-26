@@ -35,6 +35,9 @@ var run_upgrades: Dictionary = {}
 var rerolls         := 0
 var weapon_upgrades := 0        # upgrades arme choisis ce run (rate/multi/dmg)
 var run_evolution   := ""       # id de l'évolution choisie ("" = aucune)
+var ship_id          := "polyvalent"
+var ship_combat_mult := 1.0
+var ship_mining_mult := 1.0
 var _started_ms     := 0
 
 
@@ -45,7 +48,12 @@ func planet() -> Dictionary:
 func start_run(id: String, diff: int = 1) -> void:
 	planet_id    = id if GameData.PLANETS.has(id) else "roc"
 	difficulty   = clampi(diff, 1, 5)
-	max_hull     = float(GameData.CONFIG["hull"]) + 15.0 * SaveGame.skill("hull")
+	var sid: String = String(SaveGame.data.get("selected_ship", "polyvalent"))
+	ship_id = sid if GameData.SHIPS.has(sid) else "polyvalent"
+	var sdef: Dictionary = GameData.SHIPS[ship_id]
+	ship_combat_mult = float(sdef["combat_mult"])
+	ship_mining_mult = float(sdef["mining_mult"])
+	max_hull     = float(sdef["hull"]) + 15.0 * SaveGame.skill("hull")
 	hull         = max_hull
 	cargo        = {}
 	threat       = 0.0
@@ -214,6 +222,7 @@ func serialize() -> Dictionary:
 		"rerolls":          rerolls,
 		"weapon_upgrades":  weapon_upgrades,
 		"run_evolution":    run_evolution,
+		"ship_id":          ship_id,
 	}
 
 
@@ -238,6 +247,10 @@ func restore(data: Dictionary) -> void:
 	rerolls          = int(data.get("rerolls", 0))
 	weapon_upgrades  = int(data.get("weapon_upgrades", 0))
 	run_evolution    = String(data.get("run_evolution", ""))
+	ship_id          = String(data.get("ship_id", "polyvalent"))
+	var sdef_r: Dictionary = GameData.SHIPS.get(ship_id, GameData.SHIPS["polyvalent"])
+	ship_combat_mult = float(sdef_r["combat_mult"])
+	ship_mining_mult = float(sdef_r["mining_mult"])
 	active           = true
 	_started_ms      = Time.get_ticks_msec()
 	hull_changed.emit(hull, max_hull)

@@ -18,6 +18,7 @@ const REQUIRED_ENEMY    := ["hp", "speed", "damage", "radius", "xp"]
 const REQUIRED_ROCK     := ["hp", "radius", "weight", "xp", "mineable"]
 const REQUIRED_WEAPON   := ["name", "cooldown", "damage", "speed", "life", "mining_damage"]
 const REQUIRED_SKILL    := ["name", "desc", "cost", "max", "cost_res", "tab", "prereqs"]
+const REQUIRED_SHIP     := ["name", "hull", "speed", "accel", "pickup_radius", "combat_mult", "mining_mult", "desc"]
 
 
 func test_config_has_all_keys() -> bool:
@@ -185,4 +186,24 @@ func test_evolution_weapons_reference_valid_weapons() -> bool:
 		if not GameData.WEAPONS.has(weapon_id):
 			push_error("RUN_EVOLUTIONS[%s].weapon='%s' absent de WEAPONS" % [id, weapon_id])
 			return false
+	return true
+
+
+func test_ships_have_all_fields() -> bool:
+	for id in GameData.SHIPS:
+		for field in REQUIRED_SHIP:
+			if not GameData.SHIPS[id].has(field):
+				push_error("SHIPS[%s] manque le champ : %s" % [id, field])
+				return false
+	return true
+
+
+func test_polyvalent_ship_exists() -> bool:
+	return GameData.SHIPS.has("polyvalent")
+
+
+func test_ships_count() -> bool:
+	if GameData.SHIPS.size() != 6:
+		push_error("SHIPS devrait avoir 6 entrées, en a %d" % GameData.SHIPS.size())
+		return false
 	return true

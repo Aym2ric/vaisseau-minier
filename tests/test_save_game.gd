@@ -145,3 +145,8 @@ func test_default_data_stats_start_at_zero() -> bool:
 	var d := SaveGame.default_data()
 	var s: Dictionary = d["stats"]
 	return int(s["runs"]) == 0 and int(s["kills"]) == 0 and int(s["seconds"]) == 0 and int(s["resources"]) == 0
+
+
+func test_default_data_has_selected_ship() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("selected_ship") and String(d["selected_ship"]) == "polyvalent"

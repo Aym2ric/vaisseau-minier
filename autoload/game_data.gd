@@ -180,6 +180,16 @@ const WEAPONS := {
 				 "mining_damage": 8.0},
 }
 
+## 6 archétypes de vaisseau. Statistiques de base ; multiplicateurs combat/minage appliqués en run.
+const SHIPS := {
+	"polyvalent": {"name": "Polyvalent",  "hull": 60.0,  "speed": 215.0, "accel": 1250.0, "pickup_radius": 55.0,  "combat_mult": 1.0, "mining_mult": 1.0, "desc": "Équilibré. Bon pour débuter."},
+	"mobile":     {"name": "Mobile",      "hull": 45.0,  "speed": 290.0, "accel": 1600.0, "pickup_radius": 55.0,  "combat_mult": 0.9, "mining_mult": 0.9, "desc": "Très rapide, plus fragile."},
+	"mineur":     {"name": "Mineur",      "hull": 65.0,  "speed": 185.0, "accel": 1100.0, "pickup_radius": 65.0,  "combat_mult": 0.8, "mining_mult": 1.6, "desc": "Minage ×1.6, combat −20 %."},
+	"offensif":   {"name": "Offensif",    "hull": 50.0,  "speed": 220.0, "accel": 1300.0, "pickup_radius": 50.0,  "combat_mult": 1.5, "mining_mult": 0.8, "desc": "Combat ×1.5, hull réduit."},
+	"resistant":  {"name": "Résistant",   "hull": 100.0, "speed": 170.0, "accel": 900.0,  "pickup_radius": 55.0,  "combat_mult": 0.9, "mining_mult": 1.0, "desc": "Hull ×1.6, lent."},
+	"collecteur": {"name": "Collecteur",  "hull": 60.0,  "speed": 200.0, "accel": 1100.0, "pickup_radius": 120.0, "combat_mult": 0.8, "mining_mult": 1.1, "desc": "Ramassage très large."},
+}
+
 ## Nombre d'upgrades arme (rate/multi/dmg) pour déclencher une évolution.
 const EVOLUTION_THRESHOLD := 3
 

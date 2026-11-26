@@ -61,9 +61,9 @@ func _apply_damage(delta: float, stats: Dictionary) -> void:
 			if absf(dir.angle_to(to_col.normalized())) <= half_angle:
 				var hit_dmg: float
 				if col is Rock and (col as Rock).kind not in ["rock", "hard"]:
-					hit_dmg = float(stats["mining_damage"]) * mine_mult * delta
+					hit_dmg = float(stats["mining_damage"]) * mine_mult * RunState.ship_mining_mult * delta
 				else:
-					hit_dmg = base_dmg * dmg_mult * delta
+					hit_dmg = base_dmg * dmg_mult * RunState.ship_combat_mult * delta
 				col.take_hit(hit_dmg)
 
 

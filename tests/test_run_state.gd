@@ -530,3 +530,35 @@ func test_end_run_stats_accumulate_across_runs() -> bool:
 	RunState.end_run(false)
 	return int(SaveGame.data["stats"].get("runs", 0)) == 2 \
 		and int(SaveGame.data["stats"].get("resources", 0)) >= 2
+
+
+func test_start_run_applies_ship_hull() -> bool:
+	SaveGame.data["selected_ship"] = "resistant"
+	RunState.start_run("roc", 1)
+	var expected := 100.0 + 15.0 * SaveGame.skill("hull")
+	RunState.active = false
+	return absf(RunState.max_hull - expected) < 0.01
+
+
+func test_start_run_applies_combat_mult() -> bool:
+	SaveGame.data["selected_ship"] = "offensif"
+	RunState.start_run("roc", 1)
+	var ok := absf(RunState.ship_combat_mult - 1.5) < 0.01
+	RunState.active = false
+	return ok
+
+
+func test_start_run_applies_mining_mult() -> bool:
+	SaveGame.data["selected_ship"] = "mineur"
+	RunState.start_run("roc", 1)
+	var ok := absf(RunState.ship_mining_mult - 1.6) < 0.01
+	RunState.active = false
+	return ok
+
+
+func test_polyvalent_has_neutral_mults() -> bool:
+	SaveGame.data["selected_ship"] = "polyvalent"
+	RunState.start_run("roc", 1)
+	var ok := absf(RunState.ship_combat_mult - 1.0) < 0.01 and absf(RunState.ship_mining_mult - 1.0) < 0.01
+	RunState.active = false
+	return ok

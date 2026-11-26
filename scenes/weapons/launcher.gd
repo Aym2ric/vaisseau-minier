@@ -27,8 +27,8 @@ func update_weapon(delta: float, firing: bool) -> void:
 		var rocket: Rocket = _rocket_scene.instantiate()
 		rocket.position = muzzle()
 		rocket.rotation = ship.rotation + angle_offset
-		rocket.damage = float(stats["damage"]) * dmg_mult
-		rocket.mining_damage = float(stats["mining_damage"]) * mine_mult
+		rocket.damage = float(stats["damage"]) * dmg_mult * RunState.ship_combat_mult
+		rocket.mining_damage = float(stats["mining_damage"]) * mine_mult * RunState.ship_mining_mult
 		rocket.explosion_radius = float(stats["explosion_radius"]) * radius_mult
 		rocket.explosion_damage = float(stats["explosion_damage"]) * dmg_mult * (1.0 + 0.2 * SaveGame.skill("explosion_dmg"))
 		rocket.speed = float(stats["speed"])

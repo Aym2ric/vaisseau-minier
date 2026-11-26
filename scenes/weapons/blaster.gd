@@ -21,9 +21,9 @@ func update_weapon(delta: float, firing: bool) -> void:
 	match evo:
 		"blaster_heavy":   dmg_evo = 2.0
 		"blaster_gatling": dmg_evo = 0.7
-	var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("blaster_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
+	var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("blaster_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * RunState.ship_combat_mult
 	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
-	var mining_dmg := float(stats["mining_damage"]) * mine_mult
+	var mining_dmg := float(stats["mining_damage"]) * mine_mult * RunState.ship_mining_mult
 	for i in count:
 		var angle := ship.rotation + (i - (count - 1) / 2.0) * 0.12
 		var bullet: Bullet = BULLET_SCENE.instantiate()
