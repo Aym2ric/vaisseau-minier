@@ -228,6 +228,125 @@ func _station_sell(id: String) -> void:
 	call_deferred("_rebuild_station_panel")
 
 
+## Panneau de montée de niveau : 3 cartes avec icône + nom + description.
+func show_level_up(new_level: int, choices: Array, on_pick: Callable, on_reroll: Callable = Callable()) -> void:
+	var icons := {
+		"repair": ["+",  Color("6dbf4f")],
+		"armor":  ["◼",  Color("4a7fbf")],
+		"speed":  ["▶",  Color("ffb040")],
+		"magnet": ["◎",  Color("9b5be8")],
+		"rate":   ["⚙",  Color("e87040")],
+		"multi":  ["⊞",  Color("4080e8")],
+		"dmg":    ["◆",  Color("e85050")],
+		"mult":   ["★",  Color("d4a040")],
+	}
+	_panel_title.text = "Niveau %d !" % new_level
+	_panel_body.text = "Choisissez une amélioration"
+	for child in _panel_buttons.get_children():
+		child.queue_free()
+
+	var cards_row := HBoxContainer.new()
+	cards_row.add_theme_constant_override("separation", 14)
+	cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_panel_buttons.add_child(cards_row)
+
+	for id in choices:
+		var def: Dictionary = GameData.RUN_UPGRADES[id]
+		var icon: Array = icons.get(id, ["?", ACCENT])
+		var col: Color = icon[1]
+
+		var card := Button.new()
+		card.custom_minimum_size = Vector2(165, 190)
+		card.add_theme_stylebox_override("normal", _box(Color("1e1510"), 16))
+		card.add_theme_stylebox_override("hover", _box(Color("332015"), 16))
+		card.add_theme_stylebox_override("pressed", _box(col.darkened(0.55), 16))
+		card.add_theme_stylebox_override("focus", _box(Color("1e1510"), 16))
+		cards_row.add_child(card)
+
+		var inner := VBoxContainer.new()
+		inner.add_theme_constant_override("separation", 8)
+		inner.alignment = BoxContainer.ALIGNMENT_CENTER
+		inner.set_anchors_preset(Control.PRESET_FULL_RECT)
+		card.add_child(inner)
+
+		var spacer_top := Control.new()
+		spacer_top.custom_minimum_size = Vector2(0, 4)
+		inner.add_child(spacer_top)
+
+		# Icône : cercle coloré + glyphe centré
+		var icon_wrap := CenterContainer.new()
+		inner.add_child(icon_wrap)
+
+		var icon_bg := PanelContainer.new()
+		icon_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var s := StyleBoxFlat.new()
+		s.bg_color = col.darkened(0.5)
+		s.set_corner_radius_all(999)
+		s.set_border_width_all(2)
+		s.border_color = col
+		s.content_margin_left = 16
+		s.content_margin_right = 16
+		s.content_margin_top = 12
+		s.content_margin_bottom = 12
+		icon_bg.add_theme_stylebox_override("panel", s)
+		icon_wrap.add_child(icon_bg)
+
+		var glyph := Label.new()
+		glyph.text = icon[0]
+		glyph.add_theme_font_size_override("font_size", 32)
+		glyph.add_theme_color_override("font_color", col)
+		glyph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		glyph.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_bg.add_child(glyph)
+
+		# Nom
+		var name_lbl := Label.new()
+		_style_label(name_lbl, 14, INK)
+		name_lbl.text = def["name"]
+		name_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		name_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		name_lbl.custom_minimum_size = Vector2(145, 0)
+		name_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inner.add_child(name_lbl)
+
+		# Description
+		var desc_lbl := Label.new()
+		_style_label(desc_lbl, 12, MUTED)
+		desc_lbl.text = def["desc"]
+		desc_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		desc_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		desc_lbl.custom_minimum_size = Vector2(145, 0)
+		desc_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		inner.add_child(desc_lbl)
+
+		var cid: String = id
+		card.pressed.connect(func() -> void: on_pick.call(cid))
+
+		# Bouton actualiser (visible si rerolls disponibles)
+		if on_reroll.is_valid() and RunState.rerolls > 0:
+			var reroll_btn := Button.new()
+			reroll_btn.text = "↺ Actualiser"
+			reroll_btn.custom_minimum_size = Vector2(145, 28)
+			reroll_btn.add_theme_font_size_override("font_size", 11)
+			reroll_btn.add_theme_stylebox_override("normal", _box(Color("2a1e30"), 8))
+			reroll_btn.add_theme_stylebox_override("hover", _box(Color("3a2a40"), 8))
+			reroll_btn.add_theme_stylebox_override("focus", _box(Color("2a1e30"), 8))
+			reroll_btn.mouse_filter = Control.MOUSE_FILTER_STOP
+			inner.add_child(reroll_btn)
+			var cidx: int = choices.find(id)
+			reroll_btn.pressed.connect(func() -> void: on_reroll.call(cidx))
+
+	if on_reroll.is_valid() and RunState.rerolls > 0:
+		var reroll_lbl := Label.new()
+		_style_label(reroll_lbl, 12, MUTED)
+		reroll_lbl.text = "%d actualisation(s) restante(s)" % RunState.rerolls
+		reroll_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_panel_buttons.add_child(reroll_lbl)
+
+	_panel.visible = true
+	_panel.reset_size()
+
+
 func hide_panel() -> void:
 	_panel.visible = false
 

@@ -68,3 +68,6 @@ Tous les chiffres du rythme sont dans `autoload/game_data.gd`, bloc `CONFIG` (vi
 - Soute avec surcharge progressive.
 - Puis jalon 3 : 4 planètes, ressources rares, gardien, laser / lance-flammes / roquettes.
 # vaisseau-minier
+
+
+cd /mnt/c/Users/Aym2ric/Desktop/vaisseau-minier-godot/vaisseau-minier

@@ -6,9 +6,10 @@ const _SHIP_SCENE    = preload("res://scenes/ship/ship.tscn")
 const _ROCK_SCENE    = preload("res://scenes/world/rock.tscn")
 const _PICKUP_SCENE  = preload("res://scenes/world/pickup.tscn")
 const _ENEMY_SCENES  = {
-	"mite":   preload("res://scenes/enemies/mite.tscn"),
-	"gunner": preload("res://scenes/enemies/gunner.tscn"),
-	"rammer": preload("res://scenes/enemies/rammer.tscn"),
+	"mite":     preload("res://scenes/enemies/mite.tscn"),
+	"gunner":   preload("res://scenes/enemies/gunner.tscn"),
+	"rammer":   preload("res://scenes/enemies/rammer.tscn"),
+	"guardian": preload("res://scenes/enemies/guardian.tscn"),
 }
 
 signal cleared
@@ -185,7 +186,7 @@ func _on_rock_destroyed(rock: Rock) -> void:
 		"repair":
 			RunState.heal(12.0)
 			FloatText.spawn(effects, rock.position + Vector2(0, -20), "+12 coque", Color("8fd35f"))
-	RunState.add_xp(int(def["xp"]))
+	pass  # XP uniquement via ramassage des drops ennemis
 
 
 func _drop(at: Vector2, resource_id: String, total: int, golden: bool) -> void:
@@ -274,19 +275,26 @@ func _spawn_event() -> void:
 func _on_enemy_died(enemy: Enemy) -> void:
 	_credits(enemy.position, maxi(1, int(round(enemy.credits * RunState.mult * RunState.sector_credits_mult()))))
 	Burst.spawn(effects, enemy.position, Color("ff5a5f"), 30.0, 6)
-	RunState.add_xp(enemy.xp * (2 if RunState.sector_type == "pirate" else 1))
+	# Drop ressource (XP obtenu en ramassant)
+	var xp_amount := enemy.xp * (2 if RunState.sector_type == "pirate" else 1)
+	var p: Pickup = _PICKUP_SCENE.instantiate()
+	p.resource_id = String(planet["res"])
+	p.amount = maxi(1, enemy.xp)
+	p.xp = xp_amount
+	p.position = enemy.position
+	p.velocity = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(50, 120)
+	p.target = ship
+	p.effects = effects
+	pickups.add_child(p)
 
 
 func _spawn_boss_wave() -> void:
 	var tier := RunState.sector / 3
 	announced.emit("⚠ Secteur Gardien — défais le gardien avant d'extraire !")
 	for i in tier:
-		var boss: Enemy = _ENEMY_SCENES["rammer"].instantiate()
+		var boss: Enemy = _ENEMY_SCENES["guardian"].instantiate()
 		boss.setup(RunState.sector)
-		boss.hp *= 3.0
-		boss.xp = 40
-		boss.credits = boss.credits * 3
-		boss.position = Vector2(GameData.ARENA.x * 0.5 + (i - tier / 2.0) * 80.0, -20.0)
+		boss.position = Vector2(GameData.ARENA.x * 0.5 + (i - float(tier) / 2.0) * 130.0, -20.0)
 		boss.target = ship
 		boss.shots = projectiles
 		boss.died.connect(_on_boss_enemy_died)

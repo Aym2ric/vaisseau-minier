@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mah6vyfgak2n"
-path="res://.godot/imported/maquette v1.png-de1922f97aa0a29df47cf50084cf22df.ctex"
+uid="uid://bhuyb2dbtsxvd"
+path="res://.godot/imported/level_up.png-e402c76e95eb657d197f1c9c7e3e3194.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://maquette v1.png"
-dest_files=["res://.godot/imported/maquette v1.png-de1922f97aa0a29df47cf50084cf22df.ctex"]
+source_file="res://level_up.png"
+dest_files=["res://.godot/imported/level_up.png-e402c76e95eb657d197f1c9c7e3e3194.ctex"]
 
 [params]
 

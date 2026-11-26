@@ -20,6 +20,8 @@ var _market_content: VBoxContainer
 var _skills_content: VBoxContainer
 var _planet_buttons: Array = []   # [{id, btn}]
 var _weapon_buttons: Array = []   # [{id, btn}]
+var _param_buttons: Dictionary = {}  # option_key -> [{value, btn}]
+var _skills_tab := "general"
 
 
 func _ready() -> void:
@@ -59,6 +61,7 @@ func _ready() -> void:
 
 	_build_planet_section(left)
 	_build_weapon_section(left)
+	_build_params_section(left)
 	_build_summary_section(left)
 	_market_content = _section(right, "Marché")
 	_skills_content = _section(right, "Compétences")
@@ -134,6 +137,40 @@ func _build_weapon_section(parent: Node) -> void:
 		_weapon_buttons.append({"id": id, "btn": btn})
 
 
+func _build_params_section(parent: Node) -> void:
+	var content := _section(parent, "Paramètres", false)
+	var defs: Array = [
+		{"key": "control_mode", "label": "Pilotage", "opts": [["Libre", "free"], ["Inertie", "inertia"]]},
+		{"key": "auto_fire",    "label": "Tir",      "opts": [["Manuel", false],  ["Auto", true]]},
+	]
+	for d: Dictionary in defs:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		content.add_child(row)
+		var lbl := Label.new()
+		_style_label(lbl, 13, MUTED)
+		lbl.text = "%s :" % d["label"]
+		lbl.custom_minimum_size = Vector2(72, 0)
+		row.add_child(lbl)
+		var key: String = d["key"]
+		_param_buttons[key] = []
+		for opt: Array in d["opts"]:
+			var opt_label: String = opt[0]
+			var opt_val: Variant = opt[1]
+			var btn := Button.new()
+			btn.text = opt_label
+			btn.custom_minimum_size = Vector2(88, 32)
+			btn.add_theme_font_size_override("font_size", 13)
+			btn.pressed.connect(func() -> void:
+				var options: Dictionary = SaveGame.data["options"]
+				options[key] = opt_val
+				SaveGame.save_game()
+				call_deferred("_refresh")
+			)
+			row.add_child(btn)
+			_param_buttons[key].append({"value": opt_val, "btn": btn})
+
+
 func _build_summary_section(parent: Node) -> void:
 	var content := _section(parent, "Dernière run")
 	_summary_label = Label.new()
@@ -184,6 +221,17 @@ func _refresh() -> void:
 		btn.add_theme_stylebox_override("normal", _box(ACCENT if selected else Color("4a302a"), 10))
 		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if selected else Color("5a3a30"), 10))
 		btn.add_theme_color_override("font_color", Color("1a0d0a") if selected else INK)
+
+	# Styles paramètres
+	var options: Dictionary = SaveGame.data["options"]
+	for key: String in _param_buttons:
+		var current: Variant = options.get(key)
+		for entry: Dictionary in _param_buttons[key]:
+			var btn: Button = entry["btn"]
+			var sel: bool = entry["value"] == current
+			btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
+			btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
+			btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
 
 	# Résumé de run
 	var history: Array = SaveGame.data["history"]
@@ -266,9 +314,45 @@ func _rebuild_skills(_credits: int) -> void:
 	for child in _skills_content.get_children():
 		child.queue_free()
 
+	# --- Onglets ---
+	var tab_defs := [
+		["general",  "Général"],
+		["blaster",  "Blaster"],
+		["laser",    "Laser"],
+		["launcher", "Roquettes"],
+		["flame",    "Lance-flammes"],
+	]
+	var tabs_row := HBoxContainer.new()
+	tabs_row.add_theme_constant_override("separation", 4)
+	_skills_content.add_child(tabs_row)
+
+	for tab_def in tab_defs:
+		var tab_id: String = tab_def[0]
+		var tab_lbl: String = tab_def[1]
+		var active := tab_id == _skills_tab
+		var col := ACCENT if active else Color("3a2a28")
+		var tab_btn := Button.new()
+		tab_btn.text = tab_lbl
+		tab_btn.add_theme_font_size_override("font_size", 12)
+		tab_btn.add_theme_stylebox_override("normal", _box(col, 8, 2))
+		tab_btn.add_theme_stylebox_override("hover",  _box(col.lerp(Color.WHITE, 0.1), 8, 2))
+		tab_btn.add_theme_stylebox_override("focus",  _box(col, 8, 2))
+		tab_btn.add_theme_color_override("font_color", Color("1a0d0a") if active else INK)
+		if not active:
+			var captured: String = tab_id
+			tab_btn.pressed.connect(func() -> void: _switch_skills_tab(captured))
+		tabs_row.add_child(tab_btn)
+
+	var sep := Control.new()
+	sep.custom_minimum_size = Vector2(0, 2)
+	_skills_content.add_child(sep)
+
+	# --- Compétences de l'onglet actif ---
 	var credits: int = int(SaveGame.data["credits"])
 	for id in GameData.SKILLS:
 		var def: Dictionary = GameData.SKILLS[id]
+		if String(def.get("tab", "general")) != _skills_tab:
+			continue
 		var level: int = SaveGame.skill(id)
 		var max_level: int = int(def["max"])
 		var cost: int = int(def["cost"]) * (level + 1)
@@ -303,6 +387,11 @@ func _rebuild_skills(_credits: int) -> void:
 			var skill_id: String = id
 			btn.pressed.connect(func() -> void: _buy_skill(skill_id))
 		row.add_child(btn)
+
+
+func _switch_skills_tab(tab_id: String) -> void:
+	_skills_tab = tab_id
+	call_deferred("_refresh")
 
 
 # --- Actions --------------------------------------------------------------

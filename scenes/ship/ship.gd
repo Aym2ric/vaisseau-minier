@@ -25,6 +25,8 @@ func _ready() -> void:
 		weapon = Laser.new()
 	elif weapon_id == "launcher":
 		weapon = Launcher.new()
+	elif weapon_id == "flame":
+		weapon = Flame.new()
 	else:
 		weapon = Blaster.new()
 	weapon.ship = self
@@ -52,6 +54,8 @@ func _physics_process(delta: float) -> void:
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var aim := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 	thrusting = false
+	var auto_fire: bool = SaveGame.option("auto_fire") == true
+	var auto_aimed := false
 
 	if SaveGame.option("control_mode") == "inertia":
 		# Pivoter + pousser, le vaisseau garde son élan.
@@ -63,6 +67,8 @@ func _physics_process(delta: float) -> void:
 			velocity *= 1.0 - 3.0 * delta
 		velocity *= exp(-minf(friction, 1.2) * 0.5 * delta)
 		max_speed *= 1.25
+		if auto_fire:
+			auto_aimed = _nearest_target() != Vector2.ZERO
 	else:
 		# Déplacement libre, le vaisseau pivote vers la visée.
 		velocity += move * float(GameData.CONFIG["ship_accel"]) * delta
@@ -71,8 +77,20 @@ func _physics_process(delta: float) -> void:
 		var has_target := false
 		var target := 0.0
 		if aim.length() > 0.3:
+			# Stick : toujours prioritaire
 			target = aim.angle()
 			has_target = true
+		elif auto_fire:
+			# Mode auto : vise l'élément le plus proche.
+			# Cliquer (fire) prend le dessus et donne le contrôle à la souris.
+			var nearest := _nearest_target()
+			if nearest != Vector2.ZERO:
+				auto_aimed = true
+				if Input.is_action_pressed("fire"):
+					target = (get_global_mouse_position() - global_position).angle()
+				else:
+					target = (nearest - global_position).angle()
+				has_target = true
 		elif _use_mouse:
 			target = (get_global_mouse_position() - global_position).angle()
 			has_target = true
@@ -92,10 +110,31 @@ func _physics_process(delta: float) -> void:
 	velocity = velocity.limit_length(cap)
 	move_and_slide()
 
-	var auto_fire: bool = SaveGame.option("auto_fire") == true
-	var firing := Input.is_action_pressed("fire") or auto_fire or aim.length() > 0.6
+	var firing := Input.is_action_pressed("fire") or aim.length() > 0.6 or auto_aimed
 	weapon.update_weapon(delta, firing)
 	queue_redraw()
+
+
+func _nearest_target() -> Vector2:
+	var space := get_world_2d().direct_space_state
+	var q := PhysicsShapeQueryParameters2D.new()
+	var circle := CircleShape2D.new()
+	circle.radius = 2200.0
+	q.shape = circle
+	q.transform = Transform2D(0.0, global_position)
+	q.collision_mask = GameData.LAYER_ENEMIES | GameData.LAYER_ROCKS
+	q.collide_with_areas = true
+	q.collide_with_bodies = true
+	var nearest := Vector2.ZERO
+	var nearest_dist := INF
+	for result in space.intersect_shape(q, 32):
+		var col: Node2D = result["collider"]
+		if is_instance_valid(col):
+			var d := global_position.distance_to(col.global_position)
+			if d < nearest_dist:
+				nearest_dist = d
+				nearest = col.global_position
+	return nearest
 
 
 func _try_dash() -> void:

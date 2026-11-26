@@ -14,3 +14,4 @@ shape = SubResource("CircleShape2D_mite")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_mite_tex")
+scale = Vector2(1.6, 1.6)

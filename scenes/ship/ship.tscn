@@ -1,17 +1,18 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene format=3 uid="uid://dn6q588fofc4l"]
 
-[ext_resource type="Script" path="res://scenes/ship/ship.gd" id="1_ship"]
-[ext_resource type="Texture2D" path="res://assets/sprites/ship.svg" id="2_ship_tex"]
+[ext_resource type="Script" uid="uid://bjbrp76fptt8u" path="res://scenes/ship/ship.gd" id="1_ship"]
+[ext_resource type="Texture2D" uid="uid://bejvkiebf5can" path="res://assets/sprites/ship.svg" id="2_ship_tex"]
 
 [sub_resource type="CircleShape2D" id="CircleShape2D_ship"]
 radius = 15.0
 
-[node name="Ship" type="CharacterBody2D"]
+[node name="Ship" type="CharacterBody2D" unique_id=342636692]
 script = ExtResource("1_ship")
 
-[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+[node name="CollisionShape2D" type="CollisionShape2D" parent="." unique_id=1327008385]
 shape = SubResource("CircleShape2D_ship")
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
+[node name="Sprite2D" type="Sprite2D" parent="." unique_id=1030363203]
+scale = Vector2(1.3, 1.3)
 texture = ExtResource("2_ship_tex")
 offset = Vector2(4, 0)

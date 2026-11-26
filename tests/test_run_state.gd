@@ -19,6 +19,7 @@ func _reset() -> void:
 	RunState.level        = 0
 	RunState.xp_to_next   = 8
 	RunState.run_upgrades = {}
+	RunState.rerolls = 0
 	SaveGame.data["skills"] = {}
 
 
@@ -205,8 +206,8 @@ func test_level_up_emits_signal() -> bool:
 func test_xp_to_next_grows_after_level_up() -> bool:
 	_reset()
 	RunState.add_xp(8)
-	# xp_to_next initial=8, apres niveau 1 : round(8*1.3)=10
-	return RunState.xp_to_next == 10
+	# xp_to_next initial=8, apres niveau 1 : round(8*1.4)=11
+	return RunState.xp_to_next == 11
 
 
 func test_xp_remainder_carries_over() -> bool:

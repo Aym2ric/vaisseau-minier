@@ -138,16 +138,28 @@ func _on_leveled_up(new_level: int, choices: Array) -> void:
 	_show_levelup_panel.call_deferred(new_level, choices)
 
 
+var _levelup_level := 0
+var _levelup_choices: Array = []
+
+
 func _show_levelup_panel(new_level: int, choices: Array) -> void:
 	get_tree().paused = true
-	var lines: PackedStringArray = []
-	var options: Array = []
-	for id in choices:
-		var def: Dictionary = GameData.RUN_UPGRADES[id]
-		lines.append("• %s : %s" % [def["name"], def["desc"]])
-		var captured_id: String = id
-		options.append([def["name"], func() -> void: _pick_upgrade(captured_id)])
-	hud.show_panel("Niveau %d !" % new_level, "\n".join(lines), options)
+	_levelup_level = new_level
+	_levelup_choices = choices.duplicate()
+	hud.show_level_up(_levelup_level, _levelup_choices, _pick_upgrade, _reroll_upgrade)
+
+
+func _reroll_upgrade(idx: int) -> void:
+	if RunState.rerolls <= 0:
+		return
+	RunState.rerolls -= 1
+	# Tire une nouvelle amélioration hors des choix déjà présents
+	var pool := RunState._pick_upgrades(20)
+	for id in pool:
+		if id not in _levelup_choices:
+			_levelup_choices[idx] = id
+			break
+	hud.show_level_up(_levelup_level, _levelup_choices, _pick_upgrade, _reroll_upgrade)
 
 
 func _pick_upgrade(id: String) -> void:
@@ -170,11 +182,50 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("pause") and not hud.panel_visible():
 		get_tree().paused = true
-		hud.show_panel("Pause", "Le jeu est en pause.", [["Reprendre", _resume]])
+		_show_pause_panel()
 	elif event.is_action_pressed("pause") and get_tree().paused:
 		_resume()
+	# Raccourcis debug F1-F7 (pendant une run, hors pause)
+	if RunState.active and sector and not get_tree().paused:
+		if event is InputEventKey and (event as InputEventKey).pressed and not (event as InputEventKey).is_echo():
+			match (event as InputEventKey).keycode:
+				KEY_F1: RunState.add_xp(RunState.xp_to_next)
+				KEY_F2: _debug_spawn_mites()
+				KEY_F3: sector.spawn_enemy("gunner")
+				KEY_F4: sector.spawn_enemy("rammer")
+				KEY_F5: sector.spawn_enemy("guardian")
+				KEY_F6: RunState.sector_got = RunState.quota
+				KEY_F7: RunState.heal(RunState.max_hull)
+				KEY_F8: RunState.add_credits(1000)
 
 
 func _resume() -> void:
 	get_tree().paused = false
 	hud.hide_panel()
+
+
+func _show_pause_panel() -> void:
+	var options: Array = [["Reprendre", _resume]]
+	if RunState.active:
+		options.append(["[DEBUG] Outils de test", _show_debug_panel, Color("0a1a10")])
+	hud.show_panel("Pause", "Le jeu est en pause.", options)
+
+
+func _show_debug_panel() -> void:
+	var dbg := Color("0a1f0a")
+	hud.show_panel("Mode DEBUG", "Raccourcis F1-F7 aussi actifs hors pause.", [
+		["[F1] Level up",             func() -> void: RunState.add_xp(RunState.xp_to_next), dbg],
+		["[F2] Spawn x3 mites",       func() -> void: _debug_spawn_mites(),                 dbg],
+		["[F3] Spawn gunner",         func() -> void: sector.spawn_enemy("gunner"),          dbg],
+		["[F4] Spawn rammer",         func() -> void: sector.spawn_enemy("rammer"),          dbg],
+		["[F5] Spawn gardien",        func() -> void: sector.spawn_enemy("guardian"),        dbg],
+		["[F6] Quota rempli",         func() -> void: RunState.sector_got = RunState.quota,  dbg],
+		["[F7] Soigner (coque max)",  func() -> void: RunState.heal(RunState.max_hull),      dbg],
+		["[F8] +1000 credits",        func() -> void: RunState.add_credits(1000),            dbg],
+		["Reprendre",                 _resume],
+	])
+
+
+func _debug_spawn_mites() -> void:
+	for _i in 3:
+		sector.spawn_enemy("mite")

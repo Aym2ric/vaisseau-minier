@@ -23,6 +23,7 @@ var xp := 0
 var level := 0
 var xp_to_next := 8
 var run_upgrades: Dictionary = {}   # upgrade_id -> nombre d'applications
+var rerolls := 0                    # actualisations disponibles pour les améliorations
 var sector_type := "standard"       # "standard", "rich", "pirate"
 var _started_ms := 0
 
@@ -40,8 +41,9 @@ func start_run(id: String) -> void:
 	credits = 0
 	xp = 0
 	level = 0
-	xp_to_next = 8
+	xp_to_next = 20
 	run_upgrades = {}
+	rerolls = SaveGame.skill("reroll")
 	active = true
 	_started_ms = Time.get_ticks_msec()
 	_setup_sector()
@@ -140,7 +142,7 @@ func add_xp(amount: int) -> void:
 	if xp >= xp_to_next:
 		xp -= xp_to_next
 		level += 1
-		xp_to_next = int(round(xp_to_next * 1.3))
+		xp_to_next = int(round(xp_to_next * 1.4))
 		leveled_up.emit(level, _pick_upgrades(3))
 
 
@@ -162,7 +164,16 @@ func apply_upgrade(id: String) -> void:
 
 
 func _pick_upgrades(count: int) -> Array:
-	var pool: Array = GameData.RUN_UPGRADES.keys().duplicate()
+	var equipped: Variant = SaveGame.data.get("equipped", {})
+	var weapon_id := "blaster"
+	if equipped is Dictionary:
+		weapon_id = String((equipped as Dictionary).get("weapon", "blaster"))
+	var pool: Array = []
+	for id in GameData.RUN_UPGRADES.keys():
+		var def: Dictionary = GameData.RUN_UPGRADES[id]
+		var weapons: Variant = def.get("weapons", null)
+		if weapons == null or weapon_id in (weapons as Array):
+			pool.append(id)
 	pool.shuffle()
 	return pool.slice(0, mini(count, pool.size()))
 

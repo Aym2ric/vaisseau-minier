@@ -5,6 +5,7 @@ extends Area2D
 var resource_id := "fer"
 var amount := 1
 var golden := false
+var xp := 0
 var velocity := Vector2.ZERO
 var life := 18.0
 var target: Ship
@@ -49,6 +50,8 @@ func _on_body(body: Node) -> void:
 		return
 	_taken = true
 	RunState.add_resource(resource_id, amount)
+	if xp > 0:
+		RunState.add_xp(xp)
 	var res: Dictionary = GameData.RESOURCES[resource_id]
 	if effects:
 		FloatText.spawn(effects, position + Vector2(0, -14), "+%d %s" % [amount, res["name"]], res["color"])

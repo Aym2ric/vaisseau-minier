@@ -14,3 +14,4 @@ shape = SubResource("CircleShape2D_gunner")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = ExtResource("2_gunner_tex")
+scale = Vector2(1.5, 1.5)

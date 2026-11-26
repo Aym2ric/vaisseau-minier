@@ -76,26 +76,29 @@ const PLANETS := {
 
 ## Roches : points de vie au secteur 1, rayon min/max, poids de tirage.
 const ROCKS := {
-	"rock": {"hp": 3.0, "radius": [20.0, 32.0], "weight": 5.0, "xp": 1},
-	"ore": {"hp": 4.0, "radius": [20.0, 28.0], "weight": 4.5, "xp": 2},
-	"hard": {"hp": 10.0, "radius": [28.0, 36.0], "weight": 1.0, "xp": 3},
-	"gold": {"hp": 6.0, "radius": [20.0, 20.0], "weight": 0.35, "xp": 4},
-	"chest": {"hp": 4.0, "radius": [17.0, 17.0], "weight": 0.3, "xp": 2},
-	"repair": {"hp": 3.0, "radius": [16.0, 16.0], "weight": 0.25, "xp": 1},
+	"rock": {"hp": 3.0, "radius": [24.0, 38.0], "weight": 5.0, "xp": 1},
+	"ore": {"hp": 4.0, "radius": [24.0, 34.0], "weight": 4.5, "xp": 2},
+	"hard": {"hp": 10.0, "radius": [34.0, 44.0], "weight": 1.0, "xp": 3},
+	"gold": {"hp": 6.0, "radius": [24.0, 24.0], "weight": 0.35, "xp": 4},
+	"chest": {"hp": 4.0, "radius": [20.0, 20.0], "weight": 0.3, "xp": 2},
+	"repair": {"hp": 3.0, "radius": [19.0, 19.0], "weight": 0.25, "xp": 1},
 }
 
 const ENEMIES := {
-	"mite": {"hp": 2.0, "speed": 150.0, "damage": 8.0, "radius": 11.0, "credits": 1, "xp": 1},
-	"gunner": {"hp": 6.0, "speed": 100.0, "damage": 10.0, "radius": 17.0, "credits": 6, "xp": 4},
-	"rammer": {"hp": 5.0, "speed": 540.0, "damage": 14.0, "radius": 15.0, "credits": 4, "xp": 3},
+	"mite":     {"hp": 2.0,  "speed": 150.0, "damage": 8.0,  "radius": 16.0, "credits": 1,  "xp": 1},
+	"gunner":   {"hp": 6.0,  "speed": 100.0, "damage": 10.0, "radius": 25.0, "credits": 6,  "xp": 4},
+	"rammer":   {"hp": 5.0,  "speed": 540.0, "damage": 14.0, "radius": 22.0, "credits": 4,  "xp": 3},
+	"guardian": {"hp": 30.0, "speed": 450.0, "damage": 25.0, "radius": 55.0, "credits": 20, "xp": 15},
 }
 
 const WEAPONS := {
-	"blaster": {"name": "Blaster", "cooldown": 0.26, "damage": 1.0,  "speed": 720.0, "life": 0.75},
-	"laser":    {"name": "Laser",    "cooldown": 0.0,  "damage": 10.0, "speed": 0.0,   "life": 0.0,
+	"blaster":  {"name": "Blaster",        "cooldown": 0.26, "damage": 1.0,  "speed": 720.0, "life": 0.75},
+	"laser":    {"name": "Laser",          "cooldown": 0.0,  "damage": 10.0, "speed": 0.0,   "life": 0.0,
 				 "range": 340.0, "heat_rate": 0.85, "cool_rate": 1.3},
-	"launcher": {"name": "Roquettes","cooldown": 1.6,  "damage": 28.0, "speed": 190.0, "life": 3.5,
-				 "explosion_radius": 65.0, "explosion_damage": 14.0},
+	"launcher": {"name": "Roquettes",      "cooldown": 1.6,  "damage": 8.0,  "speed": 190.0, "life": 3.5,
+				 "explosion_radius": 55.0, "explosion_damage": 5.0},
+	"flame":    {"name": "Lance-flammes",  "cooldown": 0.0,  "damage": 25.0, "speed": 0.0,   "life": 0.0,
+				 "range": 160.0, "angle": 50.0, "fuel_rate": 0.65, "cool_rate": 0.9},
 }
 
 ## Améliorations choisies à chaque montée de niveau (en cours de run, non persistantes).
@@ -105,7 +108,7 @@ const RUN_UPGRADES := {
 	"speed":   {"name": "Propulseur turbo",     "desc": "+15 % de vitesse."},
 	"magnet":  {"name": "Aimant étendu",        "desc": "Rayon d'attraction ×1.5."},
 	"rate":    {"name": "Cadence améliorée",    "desc": "-20 % de rechargement."},
-	"multi":   {"name": "Double canon",         "desc": "+1 projectile par tir."},
+	"multi":   {"name": "Double canon",         "desc": "+1 projectile par tir.", "weapons": ["blaster", "launcher"]},
 	"dmg":     {"name": "Munitions perforantes","desc": "+25 % de dégâts de tir."},
 	"mult":    {"name": "Scanner de minerai",   "desc": "+0.25 multiplicateur de butin."},
 }
@@ -113,17 +116,20 @@ const RUN_UPGRADES := {
 ## Compétences persistantes achetées au hub avec des crédits.
 ## Coût du niveau N = cost × N (niveau 1 = cost×1, niveau 2 = cost×2…)
 const SKILLS := {
-	"hull":          {"name": "Blindage",        "desc": "+15 PV max.",          "cost": 200, "max": 5},
-	"thrust":        {"name": "Propulseurs",     "desc": "+8 % de vitesse.",     "cost": 150, "max": 5},
-	"dash":          {"name": "Esquive",          "desc": "Débloque l'esquive.",  "cost": 300, "max": 1},
-	"cargo":         {"name": "Soute élargie",   "desc": "+50 unités capac.",    "cost": 180, "max": 3},
-	"magnet":        {"name": "Aimant",           "desc": "+30 % de portée.",     "cost": 120, "max": 5},
-	"blaster_multi": {"name": "Double canon",     "desc": "+1 projectile.",        "cost": 250, "max": 3},
-	"blaster_dmg":   {"name": "Calibre",          "desc": "+20 % de dégâts.",      "cost": 200, "max": 5},
-	"laser_dmg":     {"name": "Laser surpuissant","desc": "+20 % de dégâts/s.",    "cost": 220, "max": 5},
-	"laser_cool":    {"name": "Dissipateur",      "desc": "+15 % refroidissement.", "cost": 180, "max": 4},
-	"launcher_dmg":  {"name": "Ogive renforcée", "desc": "+20 % de dégâts.",      "cost": 220, "max": 5},
-	"insure":        {"name": "Assurance-cargo",  "desc": "+12 % soute gardée.",   "cost": 300, "max": 3},
+	"hull":          {"name": "Blindage",         "desc": "+15 PV max.",            "cost": 200, "max": 5, "tab": "general"},
+	"thrust":        {"name": "Propulseurs",      "desc": "+8 % de vitesse.",       "cost": 150, "max": 5, "tab": "general"},
+	"dash":          {"name": "Esquive",           "desc": "Débloque l'esquive.",    "cost": 300, "max": 1, "tab": "general"},
+	"cargo":         {"name": "Soute élargie",    "desc": "+50 unités capac.",      "cost": 180, "max": 3, "tab": "general"},
+	"magnet":        {"name": "Aimant",            "desc": "+30 % de portée.",       "cost": 120, "max": 5, "tab": "general"},
+	"reroll":        {"name": "Reconfigurateur",   "desc": "+1 actualisation/run.",  "cost": 350, "max": 3, "tab": "general"},
+	"insure":        {"name": "Assurance-cargo",   "desc": "+12 % soute gardée.",    "cost": 300, "max": 3, "tab": "general"},
+	"blaster_multi": {"name": "Double canon",      "desc": "+1 projectile.",         "cost": 250, "max": 3, "tab": "blaster"},
+	"blaster_dmg":   {"name": "Calibre",           "desc": "+20 % de dégâts.",       "cost": 200, "max": 5, "tab": "blaster"},
+	"laser_dmg":     {"name": "Laser surpuissant", "desc": "+20 % de dégâts/s.",     "cost": 220, "max": 5, "tab": "laser"},
+	"laser_cool":    {"name": "Dissipateur",       "desc": "+15 % refroidissement.", "cost": 180, "max": 4, "tab": "laser"},
+	"launcher_dmg":  {"name": "Ogive renforcée",  "desc": "+20 % de dégâts.",       "cost": 220, "max": 5, "tab": "launcher"},
+	"flame_dmg":     {"name": "Carburant enrichi", "desc": "+20 % de dégâts.",       "cost": 220, "max": 5, "tab": "flame"},
+	"flame_fuel":    {"name": "Réservoir étendu",  "desc": "+15 % refroidissement.", "cost": 180, "max": 4, "tab": "flame"},
 }
 
 ## Effets de chaque arme, plus tard : laser, lance-flammes, roquettes (voir le document de conception).
