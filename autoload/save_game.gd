@@ -21,6 +21,8 @@ func default_data() -> Dictionary:
 		"equipped": {"weapon": "blaster"},
 		"selected_planet": "roc",
 		"selected_difficulty": 1,
+		"difficulties": {"roc": 1},  # max difficulté débloquée par planète
+		"pinned": [],                 # skill IDs épinglés comme objectifs
 		"options": {"control_mode": "free", "auto_fire": false},
 		"history": [],
 	}
@@ -49,6 +51,11 @@ func save_game() -> void:
 		push_warning("Sauvegarde impossible : %s" % PATH)
 		return
 	file.store_string(JSON.stringify(data, "\t"))
+
+
+func max_difficulty(planet_id: String) -> int:
+	var diffs: Dictionary = data.get("difficulties", {})
+	return int(diffs.get(planet_id, 1))
 
 
 func skill(id: String) -> int:

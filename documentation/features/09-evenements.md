@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Fenêtres garanties, type lieu instant aléatoires, annonce HUD, temporaire ou permanent.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Planifier fenêtres, annoncer, déclencher, terminer effets temporaires, conserver gisements.

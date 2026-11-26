@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Progression forte ; ×5 dégâts/minage, ×3 rendement indicatifs ; 80–120 h cible.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Mesurer durée, taux extraction, rendement/minute, coûts et puissance par difficulté.
@@ -29,3 +29,7 @@ Pas de scaling joueur ; éviter cadence nulle, valeurs non finies, économie blo
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Mesurer DPS offensif et minier séparément avec la cadence commune ; rendement distinct. Les 60 évolutions doivent offrir des choix utiles sans rendre une orientation systématiquement dominante.

@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** 60 nœuds cibles ; armes, évolutions, statistiques.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Prérequis en graphe acyclique ; achat atomique par ressources.
@@ -29,3 +29,7 @@ Pas de cycle ni ressource inaccessible ; tous nœuds complétables.
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Budget proposé : 9 armes non initiales + 20 évolutions offensives + 10 hybrides = 39 nœuds ; 21 restants pour statistiques, mécaniques et capacités à répartir. Aucun prérequis Minage.

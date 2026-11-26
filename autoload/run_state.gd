@@ -223,5 +223,11 @@ func end_run(success: bool) -> Dictionary:
 	history.push_front(summary)
 	if history.size() > 20:
 		history.resize(20)
+	# Déblocage de la difficulté suivante sur extraction réussie
+	if success and difficulty < 5:
+		var diffs: Dictionary = SaveGame.data.get("difficulties", {})
+		if difficulty >= int(diffs.get(planet_id, 1)):
+			diffs[planet_id] = difficulty + 1
+			SaveGame.data["difficulties"] = diffs
 	SaveGame.save_game()
 	return summary

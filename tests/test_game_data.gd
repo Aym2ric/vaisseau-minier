@@ -2,12 +2,16 @@
 ## Vérifie que toutes les clés requises sont présentes dans chaque table.
 extends RefCounted
 
+const REQUIRED_ELITE      := ["name", "hp_mult", "speed_mult", "dmg_mult", "xp_mult", "color"]
+const REQUIRED_EVOLUTION  := ["name", "desc", "weapon", "icon"]
+
 const REQUIRED_CONFIG := [
 	"hull", "ship_speed", "ship_accel",
 	"dash_speed", "dash_cooldown",
 	"threat_rate", "spawn_base",
 	"rocks", "extract_time", "magnet_radius",
 	"mine_range", "mine_base_rate", "discover_radius",
+	"recycle_dist", "enemy_cap",
 ]
 const REQUIRED_PLANET   := ["name", "res", "rare", "bg", "spot", "rock", "friction", "wind"]
 const REQUIRED_RESOURCE := ["name", "color", "base", "rare", "weight"]
@@ -122,3 +126,30 @@ func test_layer_constants_are_power_of_two() -> bool:
 
 func test_map_size_is_larger_than_arena() -> bool:
 	return GameData.MAP_SIZE.x > GameData.ARENA.x and GameData.MAP_SIZE.y > GameData.ARENA.y
+
+
+func test_elite_modifiers_have_all_fields() -> bool:
+	for id in GameData.ELITE_MODIFIERS:
+		for field in REQUIRED_ELITE:
+			if not GameData.ELITE_MODIFIERS[id].has(field):
+				push_error("ELITE_MODIFIERS[%s] manque le champ : %s" % [id, field])
+				return false
+	return true
+
+
+func test_run_evolutions_have_all_fields() -> bool:
+	for id in GameData.RUN_EVOLUTIONS:
+		for field in REQUIRED_EVOLUTION:
+			if not GameData.RUN_EVOLUTIONS[id].has(field):
+				push_error("RUN_EVOLUTIONS[%s] manque le champ : %s" % [id, field])
+				return false
+	return true
+
+
+func test_evolution_weapons_reference_valid_weapons() -> bool:
+	for id in GameData.RUN_EVOLUTIONS:
+		var weapon_id: String = GameData.RUN_EVOLUTIONS[id]["weapon"]
+		if not GameData.WEAPONS.has(weapon_id):
+			push_error("RUN_EVOLUTIONS[%s].weapon='%s' absent de WEAPONS" % [id, weapon_id])
+			return false
+	return true

@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Sauvegarder et quitter, une run active, consommée à reprise ; crash non récupéré.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Écrire snapshot versionné atomiquement, restaurer puis consommer ; profil permanent séparé.
@@ -32,3 +32,7 @@ Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les par
 
 ## Mise à jour V4
 Snapshot : seed et version du générateur, identifiants des murs et PV, murs détruits, gisements épuisés ou ajoutés, positions et PV des ennemis recyclés, RNG. Aucun état de brouillard à conserver. Tester reprise après destruction et recyclage.
+
+
+## Précisions V5
+Versionner le schéma ; retirer le slot minier des nouveaux profils et sauvegardes, conserver arme, évolution, compteur et choix en attente. Migration des anciens déblocages et remboursements éventuels à décider ; ne pas supprimer silencieusement les ressources du profil.

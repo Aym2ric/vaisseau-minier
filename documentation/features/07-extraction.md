@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Extraction volontaire partout après mission ; immobilité ; mort perd le butin sauf récupération Logistique.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Vérifier éligibilité, démarrer canalisation, annuler si déplacement, finaliser transaction.

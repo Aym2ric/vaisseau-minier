@@ -3,13 +3,13 @@
 ## Statut et objectif
 **Socle validé / à préserver :** XP commune, 3 choix compatibles, stats cumulables, mécaniques plafonnées.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Accumuler XP, gérer niveaux successifs, tirer options distinctes, appliquer choix.
 
 ## Exemple concret
-Trois choix : cadence, portée minière, rayon de collecte.
+Trois choix : cadence, dégâts miniers, rayon de collecte.
 
 ## Contrat technique proposé
 - Responsabilités : `ExperienceController, UpgradePicker`.
@@ -29,3 +29,7 @@ Gérer pool inférieur à 3 et plusieurs niveaux simultanés ; aucun module abse
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Les améliorations de cadence, portée et projectiles sont communes ; dégâts offensifs, dégâts miniers et rendement distincts. Compter les améliorations d’arme pour l’évolution unique, voir 14-evolutions.md.

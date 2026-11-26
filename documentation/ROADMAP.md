@@ -5,7 +5,7 @@ Ordre proposé, sans estimation calendaire faute d’audit du code et de disponi
 | Jalon | Livrables | Critère de sortie |
 |---|---|---|
 | 0 Audit | Inventaire scènes/scripts, tests du prototype, sauvegarde Git | État réel documenté et build reproductible |
-| 1 Boucle verticale | Carte finie hybride, minage immobile, combat, pickups, mission, extraction | Une run complète jouable, victoire et mort cohérentes |
+| 1 Boucle verticale | Carte finie hybride, arme unique, minage en mouvement, ciblage commun, pickups, mission, extraction | Une run complète jouable, victoire et mort cohérentes |
 | 2 Progression | XP, 3 choix, une évolution, ressources, quatre arbres minimaux, hub | Plusieurs runs améliorent réellement le profil |
 | 3 Rejouabilité | Menace, événements, élites, boss, difficultés, objectifs épinglés | Run de 30–35 min intéressante sans timer forcé |
 | 4 Robustesse | Sauvegarde, reprise, historique, profiling, réglages | Pas de duplication de ressources ; tests de reprise et longues runs |
@@ -17,7 +17,7 @@ Ordre proposé, sans estimation calendaire faute d’audit du code et de disponi
 ## Priorité immédiate
 1. Auditer le prototype sans réécrire les systèmes qui fonctionnent.
 2. Implémenter l’arène rocheuse : frontières, terrain hybride, collisions, destruction, gisements finis et points d’intérêt ; valider la connectivité. Ajouter population initiale, spawn dynamique et recyclage hors caméra avant de multiplier les planètes.
-3. Implémenter mission et extraction volontaire partout.
+3. Unifier les impacts de l’arme, supprimer le slot minier et tester le ciblage commun ; implémenter mission et extraction volontaire partout.
 4. Relier cargaison, bilan et portefeuille permanent.
 5. Ajouter une branche minimale de chaque arbre et tester le retour en run.
 
@@ -25,4 +25,4 @@ Ordre proposé, sans estimation calendaire faute d’audit du code et de disponi
 Chaque feature possède une spécification, un scénario nominal et des cas limites ; données configurables, tests de non-régression, intégration HUD et sauvegarde si pertinente. Une feature non testée n’est pas terminée.
 
 ## Risques
-Charge de création de 24 boss et 48 évolutions ; explosion des combinaisons ; sauvegarde exacte de la simulation ; équilibre de 57 ressources ; performance des hordes. Réduire le contenu de bêta plutôt que sacrifier la boucle.
+Charge de création de 24 boss et 60 évolutions ; explosion des combinaisons ; sauvegarde exacte de la simulation ; équilibre de 57 ressources ; performance des hordes. Réduire le contenu de bêta plutôt que sacrifier la boucle.

@@ -12,11 +12,11 @@
 |---|---|---|---|
 | Décor | Libre | Libre | Non nécessaire |
 | Mur permanent / frontière | Bloqué | Bloqué | Non |
-| Mur friable | Bloqué | Bloqué | Armes, minage, certains ennemis et boss |
+| Mur friable | Bloqué | Bloqué | Arme équipée, certains ennemis et boss |
 | Gisement | Bloqué | Bloqué | Minage jusqu’à épuisement |
 | Danger environnemental | Libre | Libre | Selon événement |
 
-Le minage est plus efficace que les armes sur les murs friables. Les ennemis respectent les mêmes règles de déplacement ; pas d’exceptions de collision selon les armes. Les objectifs obligatoires doivent rester accessibles. Les dimensions et densités sont des paramètres à tester, pas des constantes validées.
+Les armes détruisent les murs friables ; leur efficacité reste à équilibrer. Les ennemis respectent les mêmes règles de déplacement ; pas d’exceptions de collision selon les armes. Les objectifs obligatoires doivent rester accessibles. Les dimensions et densités sont des paramètres à tester, pas des constantes validées.
 
 ## Génération proposée
 
@@ -49,7 +49,7 @@ La traversée directe théorique dure 48 s sans obstacle. Ajuster la taille et l
 - Chunks : générer d’abord les données globales et la connectivité ; instancier progressivement les visuels et collisions autour du joueur. Précharger une marge suffisante pour éviter les collisions manquantes à grande vitesse. Ne jamais régénérer un chunk modifié depuis sa seed seule.
 - Navigation : commencer par une grille grossière partagée et des contournements locaux, sans recalcul complet par ennemi à chaque frame. Mettre à jour la zone touchée lors d’une destruction.
 - Destruction : appliquer les dégâts, retirer collision et visuel bloquant une seule fois à zéro PV, mettre à jour navigation et état sauvegardé. Pas de récompense de minerai pour un mur friable ordinaire sauf décision ultérieure.
-- Gisement : état distinct des murs ; les tirs sont arrêtés sans épuiser la ressource. Le minage automatique à l’arrêt peut cibler un mur friable à portée (priorité exacte à tester).
+- Gisement : état distinct des murs ; les tirs sont arrêtés et infligent des dégâts miniers. Les murs friables sont destructibles par les tirs ; leur ciblage automatique reste à décider.
 - Scanner : signal directionnel hors écran proposé, sans minimap ni voile. Les missions doivent rester réalisables sans scanner.
 
 ## Exemples

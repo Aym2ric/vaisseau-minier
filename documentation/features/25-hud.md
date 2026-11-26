@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Annonce événements, mission, menace, informations de run.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Afficher coque, bouclier si présent, XP, mission, chrono, extraction (sans minimap pour le moment).
@@ -32,3 +32,7 @@ Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les par
 
 ## Mise à jour V4
 Aucun brouillard de guerre, aucune minimap pour le moment. Indications de mission et scanner hors écran à concevoir.
+
+
+## Précisions V5
+Afficher la cible et le compteur d’évolution de l’arme ; aucun indicateur d’outil ou d’immobilité minière. L’immobilité d’extraction demeure.

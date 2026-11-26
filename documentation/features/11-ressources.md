@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** 57 ressources, 5 raretés, pas de monnaie universelle ni crafting.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Définir IDs stables, sources, rareté, coûts ; afficher provenance et fréquence.

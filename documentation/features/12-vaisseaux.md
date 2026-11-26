@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** 6 archétypes, statistiques uniquement, équipement interchangeable.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Appliquer profil de base puis bonus permanents et temporaires.
@@ -29,3 +29,7 @@ Aucun passif exclusif ; starter viable ; changement de vaisseau conserve preset 
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Les indices combat/minage modifient respectivement les dégâts offensifs et miniers de l’arme ; coefficients exacts à équilibrer. Aucun slot minier.

@@ -29,28 +29,20 @@ Chaque noyau de boss est un ID distinct : 24 ressources. Total 57. Les distribut
 Pioneer 100/100/100/100/100 ; Falcon 70/150/100/100/100 ; Excavator 120/75/80/160/100 ; Destroyer 100/100/150/70/100 ; Titan 200/60/100/100/100 ; Collector 100/110/75/100/160.
 
 ## Armes et évolutions proposées
-| Arme | Trois évolutions |
-|---|---|
-| Canon automatique | Gatling, Canon lourd, Canon multiple |
-| Fusil à dispersion | Salve large, Double salve, Chevrotine perforante |
-| Railgun | Hypervitesse, Double rail, Perforation profonde |
-| Lance-missiles | Essaim, Ogive lourde, Fragmentation |
-| Laser continu | Rayon large, Focalisation, Rayon double |
-| Canon à plasma | Plasma dense, Orbe multiple, Plasma instable |
-| Canon électrique | Chaîne longue, Haute tension, Arc multiple |
-| Lance-mines | Champ dense, Mine lourde, Mine répulsive |
-| Lance-flammes | Fournaise, Jet long, Cône large |
-| Canon cryogénique | Gel profond, Éclats, Blizzard |
+Les noms et effets restent à valider. Chaque cellule contient deux évolutions ; la première hybride appartient à Armement, la seconde à Minage.
 
-## Outils et évolutions proposées
-| Outil | Trois évolutions |
-|---|---|
-| Laser standard | Surcharge, Réfraction, Extraction optimisée |
-| Laser concentré | Focalisation, Pulsation, Haute énergie |
-| Laser multifaisceau | Faisceaux multiples, Réseau, Concentration adaptative |
-| Foreuse à impulsions | Onde large, Impulsion lourde, Cadence |
-| Extracteur à résonance | Résonance profonde, Raffinement, Harmoniques |
-| Extracteur longue portée | Portée extrême, Double cible, Précision |
+| Arme | Offensives | Minières | Hybrides |
+|---|---|---|---|
+| Canon automatique | Gatling ; Canon lourd | Excavateur ; Extracteur | Canon multiple ; Fragmentation |
+| Fusil à dispersion | Double salve ; Chevrotine lourde | Concasseur ; Tamisage | Salve large ; Double canon |
+| Railgun | Hypervitesse ; Rail lourd | Forage profond ; Raffinage | Double rail ; Accélérateur |
+| Lance-missiles | Essaim offensif ; Ogive lourde | Démolition ; Récupération | Fragmentation ; Salve guidée |
+| Laser continu | Focalisation ; Rayon offensif | Découpe ; Extraction optimisée | Rayon large ; Rayon double |
+| Canon à plasma | Plasma dense ; Surcharge offensive | Fusion minière ; Raffinement | Orbe multiple ; Plasma instable |
+| Canon électrique | Haute tension ; Décharge offensive | Résonance ; Extraction ionique | Chaîne longue ; Arc multiple |
+| Lance-mines | Mine lourde ; Mine offensive | Mine de carrière ; Collecte optimisée | Champ dense ; Détonation multiple |
+| Lance-flammes | Fournaise ; Combustion | Fusion rocheuse ; Raffinage thermique | Jet long ; Cône large |
+| Canon cryogénique | Gel profond ; Éclats offensifs | Fracture froide ; Extraction cryogénique | Blizzard ; Jet double |
 
 ## Capacités (recharges indicatives)
 Dash 5 s ; bouclier d’urgence 30 s ; onde de choc 15 s ; surcharge minière 30 s ; surcharge offensive 30 s ; EMP 25 s ; réparation 60 s ; attraction gravitationnelle 25 s.
@@ -70,8 +62,8 @@ Météorites, séisme, éruption cristalline, épave, migration, émergence, tem
 ## Répartition proposée des 240 nœuds
 | Arbre | Déblocages et évolutions | Statistiques et mécaniques | Total |
 |---|---:|---:|---:|
-| Armement | 39 (9 armes + 30 évolutions) | 21 | 60 |
-| Minage | 23 (5 outils + 18 évolutions) | 37 | 60 |
+| Armement | 39 (9 armes + 20 offensives + 10 hybrides) | 21 | 60 |
+| Minage | 30 (20 minières + 10 hybrides) | 30 | 60 |
 | Navigation | 12 (7 planètes + 5 vaisseaux) | 48 | 60 |
 | Logistique | 19 (16 modules + 3 slots) | 41 | 60 |
 

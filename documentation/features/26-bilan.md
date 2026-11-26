@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Historique détaillé, records, compétences épinglées.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Finaliser rapport, agréger dimensions, comparer ressources manquantes.
@@ -29,3 +29,7 @@ Avant run manque 80 fer ; après extraction de 50, manque 30.
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Historique et statistiques par arme, évolution, vaisseau, planète et difficulté ; distinguer dégâts offensifs, dégâts miniers et ressources récoltées. Aucun filtre par outil.

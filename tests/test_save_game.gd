@@ -48,6 +48,16 @@ func test_default_data_no_credits() -> bool:
 	return not d.has("credits")
 
 
+func test_default_data_has_difficulties() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("difficulties") and d["difficulties"] is Dictionary
+
+
+func test_default_data_has_pinned() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("pinned") and d["pinned"] is Array
+
+
 func test_skill_returns_zero_for_unknown() -> bool:
 	return SaveGame.skill("competence_inconnue_xyz") == 0
 

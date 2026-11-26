@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Menus uniquement ; presets dès le début.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Navigation, Hangar, Recherche, Entrepôt, Archives, Paramètres.
@@ -29,3 +29,7 @@ Validation avant départ ; afficher équipement verrouillé et coûts.
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Le loadout et les presets contiennent vaisseau, arme, capacité et modules uniquement. Afficher les deux dégâts et les caractéristiques communes.

@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Planète finale conclut histoire ; jeu continue ; succès de complétion.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Définir conditions finales, succès idempotents, builds exportables et bêta.
@@ -29,3 +29,7 @@ Tester hors ligne, reconnexion, succès déjà acquis ; conditions finales à va
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Les succès d’équipement doivent couvrir armes et évolutions, sans catégorie d’outil de minage. Liste exacte à définir.

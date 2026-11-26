@@ -32,6 +32,8 @@ const CONFIG := {
 	"mine_range":      130.0,  # portée de l'outil de minage
 	"mine_base_rate":  3.0,    # dégâts/seconde sur le gisement ciblé
 	"discover_radius": 220.0,  # rayon de révélation du brouillard
+	"recycle_dist":    2500.0, # distance hors-écran pour recycler un ennemi
+	"enemy_cap":       60,     # nombre max d'ennemis simultanés
 }
 
 const RESOURCES := {
@@ -77,6 +79,18 @@ const ROCKS := {
 	"gold":   {"hp": 6.0,  "radius": [24.0, 24.0], "weight": 0.35, "xp": 0, "mineable": true},
 	"chest":  {"hp": 4.0,  "radius": [20.0, 20.0], "weight": 0.3,  "xp": 0, "mineable": false},
 	"repair": {"hp": 3.0,  "radius": [19.0, 19.0], "weight": 0.25, "xp": 0, "mineable": false},
+}
+
+## Modificateurs élite — appliqués aléatoirement à partir du niveau de menace 2.
+const ELITE_MODIFIERS := {
+	"blinde":         {"name": "Blindé",         "hp_mult": 2.5, "speed_mult": 0.9,  "dmg_mult": 1.0, "xp_mult": 2, "color": Color("4477ff")},
+	"frenetique":     {"name": "Frénétique",     "hp_mult": 1.0, "speed_mult": 2.0,  "dmg_mult": 1.5, "xp_mult": 2, "color": Color("ff3333")},
+	"regenerant":     {"name": "Régénérant",     "hp_mult": 2.0, "speed_mult": 1.0,  "dmg_mult": 1.0, "xp_mult": 2, "color": Color("33ff88"), "regen": 0.5},
+	"explosif":       {"name": "Explosif",       "hp_mult": 1.5, "speed_mult": 1.0,  "dmg_mult": 1.5, "xp_mult": 3, "color": Color("ffaa00"), "explosion_r": 80.0, "explosion_dmg": 15.0},
+	"geant":          {"name": "Géant",          "hp_mult": 4.0, "speed_mult": 0.65, "dmg_mult": 2.0, "xp_mult": 5, "color": Color("bb44cc"), "scale": 1.6},
+	"vampirique":     {"name": "Vampirique",     "hp_mult": 1.5, "speed_mult": 1.0,  "dmg_mult": 1.0, "xp_mult": 3, "color": Color("ff66cc"), "vamp_ratio": 0.5},
+	"multiplicateur": {"name": "Multiplicateur", "hp_mult": 1.5, "speed_mult": 1.0,  "dmg_mult": 1.0, "xp_mult": 3, "color": Color("ffee22")},
+	"protecteur":     {"name": "Protecteur",     "hp_mult": 3.0, "speed_mult": 0.8,  "dmg_mult": 1.0, "xp_mult": 4, "color": Color("44aaff")},
 }
 
 const ENEMIES := {

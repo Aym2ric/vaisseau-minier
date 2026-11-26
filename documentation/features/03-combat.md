@@ -1,15 +1,15 @@
 # Combat et ciblage
 
 ## Statut et objectif
-**Socle validé / à préserver :** Visée hybride déjà annoncée implémentée ; tir compatible avec minage.
+**Socle validé / à préserver :** Visée hybride déjà annoncée implémentée ; arme unique pour combat et minage.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Séparer ciblage, cadence, projectile, dégâts et collisions.
 
 ## Exemple concret
-Un tir manuel vise le curseur tandis que le minage cible un minerai.
+Un tir manuel vise le curseur ; il peut toucher un ennemi ou un gisement.
 
 ## Contrat technique proposé
 - Responsabilités : `WeaponController, DamageResolver`.
@@ -32,3 +32,7 @@ Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les par
 
 ## Mise à jour V4
 Les projectiles alliés et ennemis sont bloqués par tous les obstacles solides, sans exception selon l’arme. Les armes endommagent les murs friables, pas les gisements.
+
+
+## Précisions V5
+Ciblage automatique : cible valide la plus proche à portée, sans préférence ennemi/gisement. Visée manuelle prioritaire. Un impact sur un gisement applique les dégâts miniers même si le tir visait un ennemi. Les obstacles bloquent les tirs ; pas de traversée des murs. Tester les deux types de cible, le changement de cible et les obstacles. Le départage à distance égale et la gestion de ligne de vue restent à définir.

@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Butin physique persistant, collecte de proximité, aucune capacité maximale.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Créer pickup, agréger objets proches compatibles, transférer quantité une seule fois.

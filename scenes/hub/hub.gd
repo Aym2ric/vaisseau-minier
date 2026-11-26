@@ -22,6 +22,7 @@ var _param_buttons: Dictionary = {}
 var _tree_tab       := "navigation"
 var _summary_label: Label
 var _inventory_label: Label
+var _pinned_label: Label
 var _tree_content: VBoxContainer
 
 
@@ -207,6 +208,14 @@ func _build_inventory_section(parent: Node) -> void:
 	_style_label(_inventory_label, 13, INK)
 	_inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_inventory_label)
+	var obj_lbl := Label.new()
+	_style_label(obj_lbl, 12, ACCENT)
+	obj_lbl.text = "OBJECTIFS ÉPINGLÉS"
+	content.add_child(obj_lbl)
+	_pinned_label = Label.new()
+	_style_label(_pinned_label, 12, MUTED)
+	_pinned_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_pinned_label)
 
 
 func _build_launch_row(parent: Node) -> void:
@@ -238,13 +247,22 @@ func _refresh() -> void:
 		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
 		btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
 
-	# Difficultés
+	# Difficultés — verrouillage selon la progression
+	var max_diff := SaveGame.max_difficulty(_selected_planet)
+	if _selected_difficulty > max_diff:
+		_selected_difficulty = 1
 	for entry in _diff_buttons:
-		var btn: Button = entry["btn"]
-		var sel: bool   = entry["level"] == _selected_difficulty
-		btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
-		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
-		btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
+		var btn: Button  = entry["btn"]
+		var sel: bool    = entry["level"] == _selected_difficulty
+		var locked: bool = entry["level"] > max_diff
+		btn.disabled = locked
+		if locked:
+			btn.add_theme_stylebox_override("normal", _box(Color("2a1a18"), 10))
+			btn.add_theme_color_override("font_color", MUTED.darkened(0.4))
+		else:
+			btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
+			btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
+			btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
 
 	# Armes
 	var equipped_weapon: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
@@ -298,6 +316,31 @@ func _refresh() -> void:
 			if qty > 0 and GameData.RESOURCES.has(id):
 				parts.append("%s : %d" % [GameData.RESOURCES[id]["name"], qty])
 		_inventory_label.text = "\n".join(parts) if parts.size() > 0 else "Vide"
+
+	# Objectifs épinglés
+	var pinned_arr: Array   = SaveGame.data.get("pinned", [])
+	var inv_dict: Dictionary = SaveGame.data["inventory"]
+	if pinned_arr.is_empty():
+		_pinned_label.text = "Épinglez des compétences ci-contre."
+	else:
+		var plines: PackedStringArray = []
+		for sid in pinned_arr:
+			if not GameData.SKILLS.has(sid):
+				continue
+			var sdef: Dictionary = GameData.SKILLS[sid]
+			var slevel: int = SaveGame.skill(sid)
+			if slevel >= int(sdef["max"]):
+				plines.append("✓ %s" % sdef["name"])
+				continue
+			var res_id: String  = String(sdef["cost_res"])
+			var cost: int       = int(sdef["cost"]) * (slevel + 1)
+			var have: int       = int(inv_dict.get(res_id, 0))
+			var res_name: String = String(GameData.RESOURCES[res_id]["name"]) if GameData.RESOURCES.has(res_id) else res_id
+			if have >= cost:
+				plines.append("✓ %s (prêt !)" % sdef["name"])
+			else:
+				plines.append("→ %s : %d / %d %s" % [sdef["name"], have, cost, res_name])
+		_pinned_label.text = "\n".join(plines)
 
 	# Arbre de compétences
 	_rebuild_tree()
@@ -386,6 +429,23 @@ func _rebuild_tree() -> void:
 					call_deferred("_refresh")
 			)
 		row.add_child(btn)
+
+		var pinned: Array   = SaveGame.data.get("pinned", [])
+		var is_pinned: bool = id in pinned
+		var pin_lbl: String = "✦ épinglé" if is_pinned else "○ épingler"
+		var pin_btn         := _small_btn(pin_lbl, level < max_level)
+		var sid_cap: String = id
+		pin_btn.pressed.connect(func() -> void:
+			var p: Array = SaveGame.data.get("pinned", [])
+			if sid_cap in p:
+				p.erase(sid_cap)
+			else:
+				p.append(sid_cap)
+			SaveGame.data["pinned"] = p
+			SaveGame.save_game()
+			call_deferred("_refresh")
+		)
+		row.add_child(pin_btn)
 
 
 # --- Helpers UI -------------------------------------------------

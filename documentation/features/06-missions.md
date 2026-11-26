@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** Mission découverte après arrivée, multi-objectifs possibles, secondaires facultatives, aucun quota minéral.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Instancier modèle compatible, valider objectifs, écouter événements de progression, débloquer extraction.

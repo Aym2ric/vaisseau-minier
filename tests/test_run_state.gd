@@ -25,7 +25,9 @@ func _reset() -> void:
 	RunState.xp_to_next      = 20
 	RunState.run_upgrades    = {}
 	RunState.rerolls         = 0
-	SaveGame.data["skills"]  = {}
+	SaveGame.data["skills"]       = {}
+	SaveGame.data["difficulties"] = {"roc": 1}
+	SaveGame.data["pinned"]       = []
 
 
 # --- Démarrage de run ---
@@ -383,6 +385,36 @@ func test_apply_evolution_sets_run_evolution() -> bool:
 	_reset()
 	RunState.apply_evolution("blaster_gatling")
 	return RunState.run_evolution == "blaster_gatling"
+
+
+func test_end_run_success_unlocks_next_difficulty() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.difficulty = 1
+	SaveGame.data["inventory"] = {}
+	SaveGame.data["difficulties"] = {"roc": 1}
+	RunState.end_run(true)
+	return int(SaveGame.data["difficulties"].get("roc", 1)) == 2
+
+
+func test_end_run_failure_does_not_unlock_difficulty() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.difficulty = 1
+	SaveGame.data["inventory"] = {}
+	SaveGame.data["difficulties"] = {"roc": 1}
+	RunState.end_run(false)
+	return int(SaveGame.data["difficulties"].get("roc", 1)) == 1
+
+
+func test_end_run_does_not_exceed_max_difficulty() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.difficulty = 5
+	SaveGame.data["inventory"] = {}
+	SaveGame.data["difficulties"] = {"roc": 5}
+	RunState.end_run(true)
+	return int(SaveGame.data["difficulties"].get("roc", 5)) == 5
 
 
 func test_start_run_resets_evolution() -> bool:

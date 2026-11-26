@@ -1,6 +1,6 @@
 # Documentation Vaisseau minier
 
-Lire [GDD_V4](GDD_V4.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
+Lire [GDD_V5](GDD_V5.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
 
 ## Index des features
 - [Cycle de vie de l’expédition](features/01-expedition.md)
@@ -16,7 +16,7 @@ Lire [GDD_V4](GDD_V4.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
 - [Ressources et économie](features/11-ressources.md)
 - [Vaisseaux](features/12-vaisseaux.md)
 - [Armes et évolutions](features/13-armes.md)
-- [Outils et évolutions de minage](features/14-outils.md)
+- [Évolutions et spécialisations](features/14-evolutions.md)
 - [Capacités actives](features/15-capacites.md)
 - [Modules](features/16-modules.md)
 - [XP et améliorations temporaires](features/17-progression-temporaire.md)
@@ -36,3 +36,7 @@ Lire [GDD_V4](GDD_V4.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
 
 ## V4 — changements
 Suppression du brouillard, report de la minimap, terrain hybride destructible, collisions uniformes, gisements finis et recyclage des ennemis. Les valeurs et algorithmes techniques restent des propositions.
+
+
+## Précisions V5
+Fusion arme/minage, suppression du slot dédié, ciblage commun, 60 évolutions. Le fichier 14 est remplacé par la spécification des évolutions. Les règles V4 de terrain et extraction sont conservées hors modifications explicites.

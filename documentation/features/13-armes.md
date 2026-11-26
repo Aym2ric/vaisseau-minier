@@ -1,15 +1,15 @@
 # Armes et évolutions
 
 ## Statut et objectif
-**Socle validé / à préserver :** 10 armes, 3 évolutions chacune, une arme équipée.
+**Socle validé / à préserver :** 10 armes, 6 évolutions chacune, une arme équipée.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Débloquer évolution dans arbre ; compter améliorations pertinentes ; proposer choix direct.
 
 ## Exemple concret
-Canon automatique → Gatling après seuil proposé de 5 améliorations.
+Canon automatique → Gatling après un seuil configurable d’améliorations de l’arme.
 
 ## Contrat technique proposé
 - Responsabilités : `WeaponDefinition, EvolutionDefinition`.
@@ -29,3 +29,7 @@ Aucune évolution verrouillée proposée ; pas de combinaison aléatoire obligat
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+Une arme, deux familles de dégâts, caractéristiques physiques communes. Voir 04-minage.md et 14-evolutions.md. Les bonus spécifiques à une cible ne modifient pas l’autre. Les six évolutions sont deux offensives, deux minières et deux hybrides ; une seule par run.

@@ -1,15 +1,15 @@
 # Arbre Minage
 
 ## Statut et objectif
-**Socle validé / à préserver :** 60 nœuds cibles ; outils, évolutions, puissance et rendement.
+**Socle validé / à préserver :** 60 nœuds cibles ; évolutions, dégâts miniers et rendement.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
-Séparer bonus de vitesse et rendement ; débloquer outils tôt.
+Séparer dégâts miniers et rendement ; les caractéristiques physiques de l’arme sont communes.
 
 ## Exemple concret
-Puissance I → laser concentré → surcharge.
+Dégâts miniers I → évolution Excavateur (exemple proposé).
 
 ## Contrat technique proposé
 - Responsabilités : `SkillTreeService`.
@@ -29,3 +29,7 @@ Pas de seuil obligatoire de minage ; vérifier économie de rendement.
 
 ## Paramètres et arbitrages
 Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+
+
+## Précisions V5
+30 évolutions (20 minières + 10 hybrides) ; 30 nœuds restants pour statistiques, mécaniques et capacités à répartir. Aucun prérequis Armement.

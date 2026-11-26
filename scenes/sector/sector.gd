@@ -37,7 +37,10 @@ var _extracting      := false
 var _extract_timer   := 0.0
 
 # Événements
-var _next_event_time := 60.0
+var _next_event_time  := 60.0
+
+# Recyclage
+var _recycle_timer := 0.0
 
 
 func _ready() -> void:
@@ -123,6 +126,12 @@ func _physics_process(delta: float) -> void:
 	if _time >= _next_event_time:
 		_spawn_event()
 		_next_event_time = _time + randf_range(70.0, 130.0)
+
+	# Recyclage des ennemis éloignés
+	_recycle_timer -= delta
+	if _recycle_timer <= 0.0:
+		_recycle_timer = 2.0
+		_recycle_enemies()
 
 	# Maintien de la densité de roches
 	rock_timer -= delta
@@ -313,13 +322,32 @@ func _drop(at: Vector2, resource_id: String, total: int, golden: bool) -> void:
 # --- Ennemis et événements ------------------------------------------
 
 func spawn_enemy(kind: String, at: Variant = null) -> void:
+	if enemies.get_child_count() >= int(GameData.CONFIG["enemy_cap"]):
+		return
 	var enemy: Enemy = _ENEMY_SCENES[kind].instantiate()
 	enemy.setup(RunState.difficulty)
+	if kind != "guardian" and RunState.threat_level() >= 2 and randf() < 0.15:
+		enemy.apply_elite(_random_elite())
 	enemy.position = at if at != null else _edge_point()
 	enemy.target   = ship
 	enemy.shots    = projectiles
 	enemy.died.connect(_on_enemy_died)
 	enemies.add_child(enemy)
+
+
+func _random_elite() -> String:
+	var keys: Array = GameData.ELITE_MODIFIERS.keys()
+	return keys[randi() % keys.size()]
+
+
+func _recycle_enemies() -> void:
+	var recycle_dist := float(GameData.CONFIG["recycle_dist"])
+	for enemy in enemies.get_children():
+		var e := enemy as Enemy
+		if e == null or e.kind == "guardian":
+			continue
+		if e.position.distance_to(ship.position) > recycle_dist:
+			e.position = _edge_point()
 
 
 func _edge_point() -> Vector2:
@@ -352,7 +380,7 @@ func _spawn_wave() -> void:
 
 
 func _spawn_event() -> void:
-	match randi() % 3:
+	match randi() % 5:
 		0:
 			for _i in 10:
 				spawn_enemy("mite")
@@ -362,14 +390,37 @@ func _spawn_event() -> void:
 			for i in 3:
 				spawn_enemy("gunner", Vector2(x, GameData.MAP_SIZE.y / 2.0 + (i - 1) * 90.0))
 			announced.emit("Raid pirate !")
-		_:
+		2:
 			for _i in 3:
 				spawn_rock("gold")
 			announced.emit("Filon d'or détecté !")
+		3:
+			spawn_enemy("guardian")
+			announced.emit("Gardien aperçu !")
+		_:
+			for _i in 4:
+				spawn_rock("repair")
+			announced.emit("Champ de réparation !")
+
+
+func _elite_explosion(at: Vector2, radius: float, damage: float) -> void:
+	Burst.spawn(effects, at, Color("ffaa00"), radius, 14)
+	if is_instance_valid(ship) and ship.position.distance_to(at) <= radius:
+		ship.take_damage(damage)
+		_on_ship_damaged()
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
 	Burst.spawn(effects, enemy.position, Color("ff5a5f"), 30.0, 6)
+	# Effets élite on-death
+	match enemy.elite_modifier:
+		"explosif":
+			var edef: Dictionary = GameData.ELITE_MODIFIERS["explosif"]
+			_elite_explosion(enemy.position, float(edef["explosion_r"]), float(edef["explosion_dmg"]))
+			announced.emit("Explosion !")
+		"multiplicateur":
+			for _i in 2:
+				spawn_enemy("mite", enemy.position + Vector2(randf_range(-25, 25), randf_range(-25, 25)))
 	# Drop ressource + XP
 	var p: Pickup = _PICKUP_SCENE.instantiate()
 	p.resource_id = String(planet["res"])

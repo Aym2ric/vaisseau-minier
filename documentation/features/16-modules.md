@@ -3,7 +3,7 @@
 ## Statut et objectif
 **Socle validé / à préserver :** 16 modules, 1 à 4 slots, pas de doublon ni évolution.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
+Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
 
 ## Fonctionnement proposé
 Valider équipement débloqué et slots ; injecter bonus et pool temporaire.
@@ -32,3 +32,7 @@ Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les par
 
 ## Mise à jour V4
 Scanner : détection de ressources et points d’intérêt hors écran, sans brouillard ni minimap. Signal directionnel proposé.
+
+
+## Précisions V5
+L’optimiseur minier agit sur les dégâts miniers ou le rendement de l’arme ; les accélérateurs de cadence agissent sur les deux usages. Effets exacts à définir.

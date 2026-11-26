@@ -1,34 +1,22 @@
-# Minage
+# Minage par l’arme équipée
 
-## Statut et objectif
-**Socle validé / à préserver :** Immobile uniquement, tous minerais accessibles à tous outils, cible la plus proche.
-
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V4.md et ../CONTENT.md.
-
-## Fonctionnement proposé
-Détecter immobilité, sélectionner cible valide, appliquer puissance, épuiser puis changer de cible.
-
-## Exemple concret
-Un minerai rare résiste 20 s avec outil de base ; déplacement annule immédiatement le rayon.
+## Règles validées
+- Aucun équipement ou mode de minage séparé. Tirer sur les gisements, à l’arrêt ou en mouvement.
+- Toute arme peut miner tout minerai ; dégâts miniers propres à l’arme, distincts des dégâts offensifs.
+- Cadence, portée, projectiles et zone d’effet partagés avec le combat.
+- Les gisements bloquent les tirs et déplacements jusqu’à destruction. À destruction, libérer le butin physique et supprimer la collision ; pas de repousse naturelle. Les événements peuvent créer de nouveaux gisements.
+- Rendement minier indépendant ; aucune limite de cargaison.
 
 ## Contrat technique proposé
-- Responsabilités : `MiningController, Deposit`.
-- Données à modéliser : `deposit_id, remaining_hp, resource_id, yield`.
-- Séparer les définitions statiques (Resources Godot) de l’état mutable de la run.
-- Utiliser des identifiants stables, valider les références au chargement et sérialiser les données plutôt que les références de Node.
-- Émettre un signal métier après changement effectif ; l’interface observe l’état sans en être propriétaire.
+`WeaponDefinition` porte `combat_damage`, `mining_damage`, `mining_yield` et les caractéristiques communes. `DepositState` porte ID, PV restants et contenu. Le résolveur d’impact choisit les dégâts selon la cible touchée. La destruction est atomique et ne produit le butin qu’une fois, même si plusieurs projectiles arrivent simultanément. Sauvegarder les PV et gisements détruits.
 
-## Critères d’acceptation et cas limites
-Aucun dégât minier en mouvement ; gérer égalité de distance, cible détruite et multi-faisceau.
+## Exemples proposés
+Canon automatique : impacts réguliers ; missiles : zone minière ; laser : dégâts continus. Un projectile destiné à un ennemi mais intercepté par un gisement inflige des dégâts miniers. Les valeurs, arrondis de rendement et effets de zone restent à équilibrer.
 
-## Scénarios de test
-1. Initialiser une partie ou un profil minimal avec des données déterministes ; exécuter le scénario nominal décrit ci-dessus.
-2. Répéter avec les conditions limites décrites ; vérifier que l’état et les quantités restent cohérents.
-3. Vérifier l’intégration avec sauvegarde/reprise lorsque la fonctionnalité appartient à la run, ou avec persistance du profil sinon.
-4. Vérifier l’affichage et les retours utilisateur, puis effectuer un test en expédition réelle.
-
-## Paramètres et arbitrages
-Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
-
-## Mise à jour V4
-Les murs friables peuvent être minés à l’arrêt ; le minage est plus efficace que les armes. Les gisements épuisés disparaissent avec leur collision et ne repoussent jamais.
+## Tests
+1. Miner en mouvement et à l’arrêt avec la même arme.
+2. Vérifier qu’un bonus offensif seul ne change pas les dégâts miniers et inversement.
+3. Vérifier qu’un bonus de cadence bénéficie aux deux activités.
+4. Détruire un gisement avec plusieurs impacts simultanés : un seul butin, collision supprimée.
+5. Sauvegarder puis reprendre un gisement partiellement détruit ; vérifier l’absence de duplication.
+6. Vérifier que chaque arme peut épuiser chaque minerai.
