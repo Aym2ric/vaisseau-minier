@@ -3,14 +3,15 @@ extends Node
 ## Les touches utilisent la position physique : ZQSD sur un clavier AZERTY = WASD sur QWERTY.
 
 const KEYS := {
-	"move_up": [KEY_W, KEY_UP],
-	"move_down": [KEY_S, KEY_DOWN],
-	"move_left": [KEY_A, KEY_LEFT],
+	"move_up":    [KEY_W, KEY_UP],
+	"move_down":  [KEY_S, KEY_DOWN],
+	"move_left":  [KEY_A, KEY_LEFT],
 	"move_right": [KEY_D, KEY_RIGHT],
-	"fire": [KEY_SPACE],
-	"dash": [KEY_SHIFT],
-	"ability": [KEY_E],
-	"pause": [KEY_ESCAPE],
+	"fire":       [KEY_SPACE],
+	"dash":       [KEY_SHIFT],
+	"ability":    [KEY_E],
+	"extract":    [KEY_TAB],
+	"pause":      [KEY_ESCAPE],
 }
 
 
@@ -26,19 +27,20 @@ func _ready() -> void:
 	click.button_index = MOUSE_BUTTON_LEFT
 	InputMap.action_add_event("fire", click)
 
-	# Manette : stick gauche pour bouger, stick droit pour viser, gâchette droite pour tirer.
-	_axis("move_left", JOY_AXIS_LEFT_X, -1.0)
-	_axis("move_right", JOY_AXIS_LEFT_X, 1.0)
-	_axis("move_up", JOY_AXIS_LEFT_Y, -1.0)
-	_axis("move_down", JOY_AXIS_LEFT_Y, 1.0)
-	_axis("aim_left", JOY_AXIS_RIGHT_X, -1.0)
-	_axis("aim_right", JOY_AXIS_RIGHT_X, 1.0)
-	_axis("aim_up", JOY_AXIS_RIGHT_Y, -1.0)
-	_axis("aim_down", JOY_AXIS_RIGHT_Y, 1.0)
-	_axis("fire", JOY_AXIS_TRIGGER_RIGHT, 1.0)
-	_button("dash", JOY_BUTTON_A)
+	# Manette
+	_axis("move_left",  JOY_AXIS_LEFT_X,  -1.0)
+	_axis("move_right", JOY_AXIS_LEFT_X,   1.0)
+	_axis("move_up",    JOY_AXIS_LEFT_Y,  -1.0)
+	_axis("move_down",  JOY_AXIS_LEFT_Y,   1.0)
+	_axis("aim_left",   JOY_AXIS_RIGHT_X, -1.0)
+	_axis("aim_right",  JOY_AXIS_RIGHT_X,  1.0)
+	_axis("aim_up",     JOY_AXIS_RIGHT_Y, -1.0)
+	_axis("aim_down",   JOY_AXIS_RIGHT_Y,  1.0)
+	_axis("fire",       JOY_AXIS_TRIGGER_RIGHT, 1.0)
+	_button("dash",    JOY_BUTTON_A)
 	_button("ability", JOY_BUTTON_Y)
-	_button("pause", JOY_BUTTON_START)
+	_button("extract", JOY_BUTTON_X)
+	_button("pause",   JOY_BUTTON_START)
 
 
 func _ensure(action: String) -> void:

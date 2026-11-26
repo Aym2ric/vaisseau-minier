@@ -1,10 +1,10 @@
 # Documentation Vaisseau minier
 
-Lire [GDD_V3](GDD_V3.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
+Lire [GDD_V4](GDD_V4.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
 
 ## Index des features
 - [Cycle de vie de l’expédition](features/01-expedition.md)
-- [Carte procédurale et brouillard](features/02-carte.md)
+- [Carte procédurale et terrain](features/02-carte.md)
 - [Combat et ciblage](features/03-combat.md)
 - [Minage](features/04-minage.md)
 - [Butin et cargaison](features/05-butin.md)
@@ -33,3 +33,6 @@ Lire [GDD_V3](GDD_V3.md), [CONTENT](CONTENT.md), puis [ROADMAP](ROADMAP.md).
 - [Statistiques et équilibrage](features/28-equilibrage.md)
 - [Histoire, complétion et Steam](features/29-steam.md)
 - [Architecture, performance et tests](features/30-technique.md)
+
+## V4 — changements
+Suppression du brouillard, report de la minimap, terrain hybride destructible, collisions uniformes, gisements finis et recyclage des ennemis. Les valeurs et algorithmes techniques restent des propositions.

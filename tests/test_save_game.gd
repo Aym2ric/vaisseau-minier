@@ -2,11 +2,6 @@
 extends RefCounted
 
 
-func test_default_data_has_credits_at_zero() -> bool:
-	var d := SaveGame.default_data()
-	return d.has("credits") and d["credits"] == 0
-
-
 func test_default_data_has_inventory_dict() -> bool:
 	var d := SaveGame.default_data()
 	return d.has("inventory") and d["inventory"] is Dictionary
@@ -43,6 +38,16 @@ func test_default_data_has_options() -> bool:
 	return d.has("options") and d["options"].has("control_mode") and d["options"].has("auto_fire")
 
 
+func test_default_data_has_selected_difficulty() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("selected_difficulty")
+
+
+func test_default_data_no_credits() -> bool:
+	var d := SaveGame.default_data()
+	return not d.has("credits")
+
+
 func test_skill_returns_zero_for_unknown() -> bool:
 	return SaveGame.skill("competence_inconnue_xyz") == 0
 
@@ -56,7 +61,7 @@ func test_skill_returns_level_when_set() -> bool:
 
 
 func test_data_is_initialized() -> bool:
-	return SaveGame.data is Dictionary and SaveGame.data.has("credits")
+	return SaveGame.data is Dictionary and SaveGame.data.has("inventory")
 
 
 func test_all_default_keys_present_in_live_data() -> bool:

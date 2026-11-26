@@ -1,25 +1,25 @@
 class_name Ship
 extends CharacterBody2D
-## Le vaisseau du joueur : déplacement libre ou à inertie, visée souris ou stick droit, esquive.
+## Le vaisseau du joueur : déplacement libre ou à inertie, visée souris/stick, esquive.
 
 signal damaged
 
 const RADIUS := 15.0
 
-var projectiles: Node2D        # conteneur des tirs, fourni par le secteur
+var projectiles: Node2D
 var weapon: Weapon
-var invulnerable := 1.5
+var invulnerable  := 1.5
 var dash_cooldown := 0.0
-var dash_time := 0.0
-var thrusting := false
-var _use_mouse := true
-var _time := 0.0
+var dash_time     := 0.0
+var thrusting     := false
+var _use_mouse    := true
+var _time         := 0.0
 
 
 func _ready() -> void:
 	collision_layer = GameData.LAYER_PLAYER
-	collision_mask = GameData.LAYER_ROCKS | GameData.LAYER_WALLS
-	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
+	collision_mask  = GameData.LAYER_ROCKS | GameData.LAYER_WALLS
+	motion_mode     = CharacterBody2D.MOTION_MODE_FLOATING
 	var weapon_id: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
 	if weapon_id == "laser":
 		weapon = Laser.new()
@@ -42,23 +42,23 @@ func _input(event: InputEvent) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	_time += delta
+	_time        += delta
 	invulnerable -= delta
 	dash_cooldown -= delta
-	dash_time -= delta
+	dash_time    -= delta
 
-	var planet := RunState.planet()
+	var planet    := RunState.planet()
 	var friction: float = planet["friction"]
-	var overload := maxf(0.0, RunState.cargo_ratio() - 1.0)
-	var max_speed: float = float(GameData.CONFIG["ship_speed"]) * (1.0 + 0.08 * SaveGame.skill("thrust")) * (1.0 + 0.15 * RunState.run_upgrade_level("speed")) * maxf(0.5, 1.0 - overload * 0.5)
+	var max_speed: float = float(GameData.CONFIG["ship_speed"]) \
+		* (1.0 + 0.08 * SaveGame.skill("thrust")) \
+		* (1.0 + 0.15 * RunState.run_upgrade_level("speed"))
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	var aim := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
+	var aim  := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 	thrusting = false
 	var auto_fire: bool = SaveGame.option("auto_fire") == true
 	var auto_aimed := false
 
 	if SaveGame.option("control_mode") == "inertia":
-		# Pivoter + pousser, le vaisseau garde son élan.
 		rotation += Input.get_axis("move_left", "move_right") * 4.4 * delta
 		if Input.is_action_pressed("move_up"):
 			velocity += Vector2.RIGHT.rotated(rotation) * 800.0 * delta
@@ -70,35 +70,31 @@ func _physics_process(delta: float) -> void:
 		if auto_fire:
 			auto_aimed = _nearest_target() != Vector2.ZERO
 	else:
-		# Déplacement libre, le vaisseau pivote vers la visée.
 		velocity += move * float(GameData.CONFIG["ship_accel"]) * delta
 		thrusting = move.length() > 0.1
 		velocity *= exp(-friction * delta * (0.35 if thrusting else 1.0))
 		var has_target := false
-		var target := 0.0
+		var target_angle := 0.0
 		if aim.length() > 0.3:
-			# Stick : toujours prioritaire
-			target = aim.angle()
+			target_angle = aim.angle()
 			has_target = true
 		elif auto_fire:
-			# Mode auto : vise l'élément le plus proche.
-			# Cliquer (fire) prend le dessus et donne le contrôle à la souris.
 			var nearest := _nearest_target()
 			if nearest != Vector2.ZERO:
 				auto_aimed = true
 				if Input.is_action_pressed("fire"):
-					target = (get_global_mouse_position() - global_position).angle()
+					target_angle = (get_global_mouse_position() - global_position).angle()
 				else:
-					target = (nearest - global_position).angle()
+					target_angle = (nearest - global_position).angle()
 				has_target = true
 		elif _use_mouse:
-			target = (get_global_mouse_position() - global_position).angle()
+			target_angle = (get_global_mouse_position() - global_position).angle()
 			has_target = true
 		elif thrusting:
-			target = move.angle()
+			target_angle = move.angle()
 			has_target = true
 		if has_target:
-			rotation = rotate_toward(rotation, target, 14.0 * delta)
+			rotation = rotate_toward(rotation, target_angle, 14.0 * delta)
 
 	var wind: float = planet["wind"]
 	if wind > 0.0:
@@ -115,6 +111,10 @@ func _physics_process(delta: float) -> void:
 	queue_redraw()
 
 
+func is_stopped() -> bool:
+	return velocity.length() < 15.0 and dash_time <= 0.0
+
+
 func _nearest_target() -> Vector2:
 	var space := get_world_2d().direct_space_state
 	var q := PhysicsShapeQueryParameters2D.new()
@@ -122,10 +122,10 @@ func _nearest_target() -> Vector2:
 	circle.radius = 2200.0
 	q.shape = circle
 	q.transform = Transform2D(0.0, global_position)
-	q.collision_mask = GameData.LAYER_ENEMIES | GameData.LAYER_ROCKS
-	q.collide_with_areas = true
+	q.collision_mask = GameData.LAYER_ENEMIES
+	q.collide_with_areas  = true
 	q.collide_with_bodies = true
-	var nearest := Vector2.ZERO
+	var nearest      := Vector2.ZERO
 	var nearest_dist := INF
 	for result in space.intersect_shape(q, 32):
 		var col: Node2D = result["collider"]
@@ -141,9 +141,9 @@ func _try_dash() -> void:
 	if SaveGame.skill("dash") < 1 or dash_cooldown > 0.0:
 		return
 	var dir := velocity.normalized() if velocity.length() > 20.0 else Vector2.RIGHT.rotated(rotation)
-	velocity = dir * float(GameData.CONFIG["dash_speed"])
+	velocity     = dir * float(GameData.CONFIG["dash_speed"])
 	invulnerable = maxf(invulnerable, 0.3)
-	dash_time = 0.2
+	dash_time    = 0.2
 	dash_cooldown = float(GameData.CONFIG["dash_cooldown"])
 
 
@@ -156,10 +156,8 @@ func take_damage(amount: float) -> void:
 
 
 func _draw() -> void:
-	# Blink d'invulnérabilité
 	var blink := invulnerable > 0.0 and dash_time <= 0.0 and int(_time * 20.0) % 2 == 0
 	modulate.a = 0.5 if blink else 1.0
-	# Flamme de propulsion (dessinée derrière le Sprite2D enfant)
 	if thrusting:
 		var flame := 10.0 + sin(_time * 40.0) * 4.0
 		DrawUtils.polygon(self, PackedVector2Array([Vector2(-13, -6), Vector2(-13 - flame, 0), Vector2(-13, 6)]), Color("ff9a3c"), 2.5)

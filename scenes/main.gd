@@ -1,6 +1,6 @@
 extends Node2D
-## Point d'entrée : hub entre les runs, secteurs pendant la run.
-## Jalon 2 : transition Hub ↔ Secteur, carte des routes à venir.
+## Point d'entrée : hub entre les runs, secteur pendant la run.
+## GDD V3 : une carte par expédition, extraction volontaire.
 
 var sector: Sector
 var hud: Hud
@@ -31,13 +31,13 @@ func _show_hub(summary: Dictionary = {}) -> void:
 	hub.run_started.connect(_on_hub_play)
 
 
-func _on_hub_play(planet_id: String) -> void:
+func _on_hub_play(planet_id: String, difficulty: int) -> void:
 	hub.queue_free()
 	hub = null
 	hud = Hud.new()
 	add_child(hud)
 	SaveGame.data["selected_planet"] = planet_id
-	RunState.start_run(planet_id)
+	RunState.start_run(planet_id, difficulty)
 	_load_sector()
 
 
@@ -53,76 +53,11 @@ func _load_sector() -> void:
 	sector.cleared.connect(_on_sector_cleared)
 	sector.announced.connect(hud.announce)
 	hud.hide_panel()
-	var sector_label := "Secteur %d" % RunState.sector
-	if RunState.sector % 3 == 0:
-		sector_label += " — ⚠ Gardien"
-	elif RunState.sector_type == "rich":
-		sector_label += " — Filon riche"
-	elif RunState.sector_type == "pirate":
-		sector_label += " — Repaire pirate"
-	hud.announce(sector_label)
 
 
 func _on_sector_cleared() -> void:
 	sector.set_deferred("process_mode", Node.PROCESS_MODE_DISABLED)
-	_show_route_panel()
-
-
-func _show_route_panel() -> void:
-	var next_sect := RunState.sector + 1
-	var next_mult := RunState.mult + float(GameData.CONFIG["mult_step"])
-	var next_quota := int(round(float(GameData.CONFIG["quota_base"]) * pow(float(GameData.CONFIG["quota_growth"]), RunState.sector)))
-	var keep := int(round(100.0 * minf(0.9, float(GameData.CONFIG["keep_on_death"]) + 0.12 * SaveGame.skill("insure"))))
-	var status := "Soute : %s  ·  Coque : %d / %d\nSi tu continues et que la coque lâche, tu ne gardes que %d %% de la soute." % [
-		RunState.cargo_text(), int(ceil(RunState.hull)), int(RunState.max_hull), keep,
-	]
-	var specials := ["rich", "pirate"]
-	specials.shuffle()
-	var route_types: Array = ["standard", specials[0]]
-	if RunState.sector >= 3:
-		route_types.append(specials[1])
-	var options: Array = []
-	for rtype: String in route_types:
-		var captured: String = rtype
-		options.append([_route_label(rtype, next_sect, next_quota, next_mult),
-			func() -> void: _continue_as(captured), _route_color(rtype)])
-	if RunState.sector >= 2 and not RunState.cargo.is_empty():
-		options.append(["Station commerciale — Vendre des ressources avant de décider",
-			_show_station, Color("102a1a")])
-	options.append(["Rentrer au vaisseau-mère — Soute sécurisée",
-		_return_home, Color("1a1a10")])
-	hud.show_panel("Extraction réussie !", status, options)
-
-
-func _route_label(rtype: String, s: int, quota: int, m: float) -> String:
-	match rtype:
-		"rich":   return "Filon riche — Sect. %d  (quota %d, ×%.1f)  · Roches ×1.6, menace ×0.7" % [s, quota, m]
-		"pirate": return "Repaire pirate — Sect. %d  (quota %d, ×%.1f)  · Ennemis ×1.6, crédits ×2" % [s, quota, m]
-		_:        return "Standard — Sect. %d  (quota %d, ×%.1f)" % [s, quota, m]
-
-
-func _route_color(rtype: String) -> Color:
-	match rtype:
-		"rich":   return Color("1a2a10")
-		"pirate": return Color("2a1010")
-		_:        return Color("3a2010")
-
-
-func _continue_as(rtype: String) -> void:
-	RunState.next_sector()
-	RunState.sector_type = rtype
-	_load_sector()
-
-
-func _return_home() -> void:
-	_show_hub(RunState.end_run(true))
-
-
-func _show_station() -> void:
-	hud.show_station_market(
-		func() -> void: _show_route_panel(),
-		func() -> void: _return_home()
-	)
+	_show_hub.call_deferred(RunState.end_run(true))
 
 
 func _on_run_failed() -> void:
@@ -153,7 +88,6 @@ func _reroll_upgrade(idx: int) -> void:
 	if RunState.rerolls <= 0:
 		return
 	RunState.rerolls -= 1
-	# Tire une nouvelle amélioration hors des choix déjà présents
 	var pool := RunState._pick_upgrades(20)
 	for id in pool:
 		if id not in _levelup_choices:
@@ -194,9 +128,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				KEY_F3: sector.spawn_enemy("gunner")
 				KEY_F4: sector.spawn_enemy("rammer")
 				KEY_F5: sector.spawn_enemy("guardian")
-				KEY_F6: RunState.sector_got = RunState.quota
+				KEY_F6: RunState.complete_mission()
 				KEY_F7: RunState.heal(RunState.max_hull)
-				KEY_F8: RunState.add_credits(1000)
 
 
 func _resume() -> void:
@@ -214,15 +147,14 @@ func _show_pause_panel() -> void:
 func _show_debug_panel() -> void:
 	var dbg := Color("0a1f0a")
 	hud.show_panel("Mode DEBUG", "Raccourcis F1-F7 aussi actifs hors pause.", [
-		["[F1] Level up",             func() -> void: RunState.add_xp(RunState.xp_to_next), dbg],
-		["[F2] Spawn x3 mites",       func() -> void: _debug_spawn_mites(),                 dbg],
-		["[F3] Spawn gunner",         func() -> void: sector.spawn_enemy("gunner"),          dbg],
-		["[F4] Spawn rammer",         func() -> void: sector.spawn_enemy("rammer"),          dbg],
-		["[F5] Spawn gardien",        func() -> void: sector.spawn_enemy("guardian"),        dbg],
-		["[F6] Quota rempli",         func() -> void: RunState.sector_got = RunState.quota,  dbg],
-		["[F7] Soigner (coque max)",  func() -> void: RunState.heal(RunState.max_hull),      dbg],
-		["[F8] +1000 credits",        func() -> void: RunState.add_credits(1000),            dbg],
-		["Reprendre",                 _resume],
+		["[F1] Level up",            func() -> void: RunState.add_xp(RunState.xp_to_next), dbg],
+		["[F2] Spawn x3 mites",      func() -> void: _debug_spawn_mites(),                 dbg],
+		["[F3] Spawn gunner",        func() -> void: sector.spawn_enemy("gunner"),          dbg],
+		["[F4] Spawn rammer",        func() -> void: sector.spawn_enemy("rammer"),          dbg],
+		["[F5] Spawn gardien",       func() -> void: sector.spawn_enemy("guardian"),        dbg],
+		["[F6] Mission accomplie",   func() -> void: RunState.complete_mission(),            dbg],
+		["[F7] Soigner (coque max)", func() -> void: RunState.heal(RunState.max_hull),      dbg],
+		["Reprendre",                _resume],
 	])
 
 

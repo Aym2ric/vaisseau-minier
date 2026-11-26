@@ -5,7 +5,7 @@ Ordre proposé, sans estimation calendaire faute d’audit du code et de disponi
 | Jalon | Livrables | Critère de sortie |
 |---|---|---|
 | 0 Audit | Inventaire scènes/scripts, tests du prototype, sauvegarde Git | État réel documenté et build reproductible |
-| 1 Boucle verticale | Carte finie, brouillard, minage immobile, combat, pickups, mission, extraction | Une run complète jouable, victoire et mort cohérentes |
+| 1 Boucle verticale | Carte finie hybride, minage immobile, combat, pickups, mission, extraction | Une run complète jouable, victoire et mort cohérentes |
 | 2 Progression | XP, 3 choix, une évolution, ressources, quatre arbres minimaux, hub | Plusieurs runs améliorent réellement le profil |
 | 3 Rejouabilité | Menace, événements, élites, boss, difficultés, objectifs épinglés | Run de 30–35 min intéressante sans timer forcé |
 | 4 Robustesse | Sauvegarde, reprise, historique, profiling, réglages | Pas de duplication de ressources ; tests de reprise et longues runs |
@@ -16,7 +16,7 @@ Ordre proposé, sans estimation calendaire faute d’audit du code et de disponi
 
 ## Priorité immédiate
 1. Auditer le prototype sans réécrire les systèmes qui fonctionnent.
-2. Remplacer l’arène par une carte finie et assurer l’accessibilité des objectifs.
+2. Implémenter l’arène rocheuse : frontières, terrain hybride, collisions, destruction, gisements finis et points d’intérêt ; valider la connectivité. Ajouter population initiale, spawn dynamique et recyclage hors caméra avant de multiplier les planètes.
 3. Implémenter mission et extraction volontaire partout.
 4. Relier cargaison, bilan et portefeuille permanent.
 5. Ajouter une branche minimale de chaque arbre et tester le retour en run.

@@ -1,5 +1,6 @@
 extends Node
-## État de la run en cours : secteur, coque, soute, menace.
+## État de la run en cours — GDD V3.
+## Carte unique par expédition, menace temporelle, mission, extraction volontaire.
 ## La sauvegarde n'est modifiée qu'à la fin de la run (end_run).
 
 signal hull_changed(hull: float, max_hull: float)
@@ -7,71 +8,78 @@ signal cargo_changed
 signal run_failed
 signal resource_discovered(id: String)
 signal leveled_up(level: int, choices: Array)
+signal mission_updated(progress: int, target: int)
+signal mission_completed
 
-var active := false
-var planet_id := "roc"
-var sector := 1
-var mult := 1.0
-var hull := 60.0
-var max_hull := 60.0
-var cargo: Dictionary = {}   # ressource -> quantité ramassée
-var credits := 0
-var quota := 20
-var sector_got := 0          # progression du quota (une ressource rare compte triple)
-var threat := 0.0            # mise à jour par le secteur
-var xp := 0
-var level := 0
-var xp_to_next := 8
-var run_upgrades: Dictionary = {}   # upgrade_id -> nombre d'applications
-var rerolls := 0                    # actualisations disponibles pour les améliorations
-var sector_type := "standard"       # "standard", "rich", "pirate"
-var _started_ms := 0
+var active        := false
+var planet_id     := "roc"
+var difficulty    := 1          # 1–5
+var hull          := 60.0
+var max_hull      := 60.0
+var cargo: Dictionary = {}      # ressource -> quantité
+var threat        := 0.0
+var elapsed_time  := 0.0        # secondes depuis le début de l'expédition
+
+var mission_type     := "eliminate"
+var mission_target   := 10
+var mission_progress := 0
+var mission_complete := false
+
+var extract_progress := 0.0     # 0.0–1.0, géré par sector.gd
+var is_mining        := false   # vrai quand l'outil est actif
+
+var xp              := 0
+var level           := 0
+var xp_to_next      := 20
+var run_upgrades: Dictionary = {}
+var rerolls         := 0
+var _started_ms     := 0
 
 
 func planet() -> Dictionary:
 	return GameData.PLANETS[planet_id]
 
 
-func start_run(id: String) -> void:
-	planet_id = id if GameData.PLANETS.has(id) else "roc"
-	sector = 1
-	max_hull = float(GameData.CONFIG["hull"]) + 15.0 * SaveGame.skill("hull")
-	hull = max_hull
-	cargo = {}
-	credits = 0
-	xp = 0
-	level = 0
-	xp_to_next = 20
+func start_run(id: String, diff: int = 1) -> void:
+	planet_id    = id if GameData.PLANETS.has(id) else "roc"
+	difficulty   = clampi(diff, 1, 5)
+	max_hull     = float(GameData.CONFIG["hull"]) + 15.0 * SaveGame.skill("hull")
+	hull         = max_hull
+	cargo        = {}
+	threat       = 0.0
+	elapsed_time = 0.0
+	xp           = 0
+	level        = 0
+	xp_to_next   = 20
 	run_upgrades = {}
-	rerolls = SaveGame.skill("reroll")
-	active = true
-	_started_ms = Time.get_ticks_msec()
-	_setup_sector()
+	rerolls      = SaveGame.skill("reroll")
+	mission_type     = "eliminate"
+	mission_target   = 5 + difficulty * 5   # 10 / 15 / 20 / 25 / 30
+	mission_progress = 0
+	mission_complete = false
+	extract_progress = 0.0
+	is_mining        = false
+	active       = true
+	_started_ms  = Time.get_ticks_msec()
 	hull_changed.emit(hull, max_hull)
 	cargo_changed.emit()
 
 
-func next_sector() -> void:
-	sector += 1
-	_setup_sector()
+## Avance le temps et la menace — appelé par sector.gd à chaque _physics_process.
+func tick(delta: float, threat_mult: float = 1.0) -> void:
+	elapsed_time += delta
+	threat += delta * float(GameData.CONFIG["threat_rate"]) * threat_mult
 
 
-func _setup_sector() -> void:
-	mult = 1.0 + float(GameData.CONFIG["mult_step"]) * (sector - 1) + 0.25 * run_upgrade_level("mult")
-	var base := float(GameData.CONFIG["quota_base"])
-	var growth := float(GameData.CONFIG["quota_growth"])
-	quota = int(round(base * pow(growth, sector - 1)))
-	sector_got = 0
-	threat = 0.0
-	sector_type = "standard"
+func threat_level() -> int:
+	return int(threat / 20.0) + 1
 
 
-func quota_reached() -> bool:
-	return sector_got >= quota
+func get_mult() -> float:
+	return 1.0 + 0.25 * run_upgrade_level("mult")
 
 
 func add_resource(id: String, amount: int) -> void:
-	## Stocke dans la soute. Ne compte plus vers le quota (voir add_quota).
 	cargo[id] = int(cargo.get(id, 0)) + amount
 	var found: Dictionary = SaveGame.data["found"]
 	if not found.has(id):
@@ -80,15 +88,21 @@ func add_resource(id: String, amount: int) -> void:
 	cargo_changed.emit()
 
 
-func add_quota(amount: int, rare: bool = false) -> void:
-	## Compte vers le quota du secteur (appelé à la destruction de roche).
-	sector_got += amount * (3 if rare else 1)
-	cargo_changed.emit()
+func add_kill() -> void:
+	if mission_type != "eliminate" or mission_complete:
+		return
+	mission_progress += 1
+	mission_updated.emit(mission_progress, mission_target)
+	if mission_progress >= mission_target:
+		complete_mission()
 
 
-func add_credits(amount: int) -> void:
-	credits += amount
-	cargo_changed.emit()
+func complete_mission() -> void:
+	if mission_complete:
+		return
+	mission_complete = true
+	mission_completed.emit()
+	add_xp(15)
 
 
 func heal(amount: float) -> void:
@@ -109,32 +123,9 @@ func damage(amount: float) -> void:
 func cargo_text() -> String:
 	var parts: PackedStringArray = []
 	for id in cargo:
-		var res: Dictionary = GameData.RESOURCES[id]
-		parts.append("%d %s" % [int(cargo[id]), res["name"]])
-	if credits > 0:
-		parts.append("%d cr" % credits)
+		if int(cargo[id]) > 0 and GameData.RESOURCES.has(id):
+			parts.append("%d %s" % [int(cargo[id]), GameData.RESOURCES[id]["name"]])
 	return " · ".join(parts) if parts.size() > 0 else "vide"
-
-
-func cargo_weight() -> int:
-	var total := 0
-	for id in cargo:
-		var res: Dictionary = GameData.RESOURCES[id]
-		total += int(cargo[id]) * int(res["weight"])
-	return total
-
-
-func cargo_cap() -> int:
-	return int(GameData.CONFIG["cargo_cap"]) + 50 * SaveGame.skill("cargo")
-
-
-func cargo_ratio() -> float:
-	var cap := cargo_cap()
-	return float(cargo_weight()) / float(cap) if cap > 0 else 0.0
-
-
-func cargo_full() -> bool:
-	return cargo_ratio() >= 1.5
 
 
 func add_xp(amount: int) -> void:
@@ -159,8 +150,6 @@ func apply_upgrade(id: String) -> void:
 			max_hull += 20.0
 			hull = minf(hull + 20.0, max_hull)
 			hull_changed.emit(hull, max_hull)
-		"mult":
-			mult += 0.25
 
 
 func _pick_upgrades(count: int) -> Array:
@@ -178,62 +167,36 @@ func _pick_upgrades(count: int) -> Array:
 	return pool.slice(0, mini(count, pool.size()))
 
 
-func sector_rock_mult() -> float:
-	match sector_type:
-		"rich":   return 1.6
-		"pirate": return 0.6
-		_:        return 1.0
-
-
-func sector_threat_mult() -> float:
-	match sector_type:
-		"rich":   return 0.7
-		"pirate": return 1.6
-		_:        return 1.0
-
-
-func sector_credits_mult() -> float:
-	return 2.0 if sector_type == "pirate" else 1.0
-
-
-## Termine la run et verse le butin dans la sauvegarde. Retourne un résumé.
+## Termine la run, verse le cargo dans l'inventaire, retourne un résumé.
 func end_run(success: bool) -> Dictionary:
 	active = false
 	var keep := 1.0
 	if not success:
-		keep = min(0.9, float(GameData.CONFIG["keep_on_death"]) + 0.12 * SaveGame.skill("insure"))
+		keep = minf(0.25, 0.12 * SaveGame.skill("insure"))
 	var kept := {}
 	var lost := {}
 	var inventory: Dictionary = SaveGame.data["inventory"]
 	for id in cargo:
 		var amount := int(cargo[id])
-		var k := int(floor(amount * keep))
+		var k := amount if success else int(floor(amount * keep))
 		kept[id] = k
 		lost[id] = amount - k
-		inventory[id] = int(inventory.get(id, 0)) + k
-	var kept_credits := int(floor(credits * keep))
-	SaveGame.data["credits"] = int(SaveGame.data["credits"]) + kept_credits
+		if k > 0:
+			inventory[id] = int(inventory.get(id, 0)) + k
 	var summary := {
-		"success": success,
-		"planet": planet_id,
-		"sectors": sector if success else sector - 1,
-		"kept": kept,
-		"lost": lost,
-		"credits": kept_credits,
-		"seconds": int((Time.get_ticks_msec() - _started_ms) / 1000),
+		"success":    success,
+		"planet":     planet_id,
+		"difficulty": difficulty,
+		"level":      level,
+		"kills":      mission_progress,
+		"mission":    mission_complete,
+		"kept":       kept,
+		"lost":       lost,
+		"seconds":    int((Time.get_ticks_msec() - _started_ms) / 1000),
 	}
-	if success and sector >= 2:
-		var order: Array = GameData.PLANETS.keys()
-		var idx: int = order.find(planet_id)
-		if idx >= 0 and idx + 1 < order.size():
-			var next_id: String = order[idx + 1]
-			var unlocked: Dictionary = SaveGame.data["unlocked"]
-			if not unlocked.has(next_id):
-				unlocked[next_id] = true
-				summary["unlocked"] = next_id
 	var history: Array = SaveGame.data["history"]
 	history.push_front(summary)
-	if history.size() > 10:
-		history.resize(10)
+	if history.size() > 20:
+		history.resize(20)
 	SaveGame.save_game()
 	return summary

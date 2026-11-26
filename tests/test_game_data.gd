@@ -3,18 +3,18 @@
 extends RefCounted
 
 const REQUIRED_CONFIG := [
-	"hull", "keep_on_death", "ship_speed", "ship_accel",
-	"dash_speed", "dash_cooldown", "quota_base", "quota_growth",
-	"mult_step", "threat_rate", "threat_step", "spawn_base",
-	"rocks", "extract_time", "magnet_radius", "event_min", "event_max",
-	"cargo_cap",
+	"hull", "ship_speed", "ship_accel",
+	"dash_speed", "dash_cooldown",
+	"threat_rate", "spawn_base",
+	"rocks", "extract_time", "magnet_radius",
+	"mine_range", "mine_base_rate", "discover_radius",
 ]
 const REQUIRED_PLANET   := ["name", "res", "rare", "bg", "spot", "rock", "friction", "wind"]
 const REQUIRED_RESOURCE := ["name", "color", "base", "rare", "weight"]
-const REQUIRED_ENEMY    := ["hp", "speed", "damage", "radius", "credits", "xp"]
-const REQUIRED_ROCK     := ["hp", "radius", "weight", "xp"]
+const REQUIRED_ENEMY    := ["hp", "speed", "damage", "radius", "xp"]
+const REQUIRED_ROCK     := ["hp", "radius", "weight", "xp", "mineable"]
 const REQUIRED_WEAPON   := ["name", "cooldown", "damage", "speed", "life"]
-const REQUIRED_SKILL    := ["name", "desc", "cost", "max"]
+const REQUIRED_SKILL    := ["name", "desc", "cost", "max", "cost_res", "tab"]
 
 
 func test_config_has_all_keys() -> bool:
@@ -118,3 +118,7 @@ func test_layer_constants_are_power_of_two() -> bool:
 			push_error("Layer de collision non valide : %d" % val)
 			return false
 	return true
+
+
+func test_map_size_is_larger_than_arena() -> bool:
+	return GameData.MAP_SIZE.x > GameData.ARENA.x and GameData.MAP_SIZE.y > GameData.ARENA.y

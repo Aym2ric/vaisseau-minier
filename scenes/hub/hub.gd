@@ -1,8 +1,9 @@
 class_name Hub
 extends Control
-## Vaisseau-mère : entre chaque run. Destination, marché, arbre de compétences.
+## Vaisseau-mère — interface menus GDD V3.
+## Navigation, sélection difficulté, équipement, compétences (arbres par ressources), inventaire.
 
-signal run_started(planet_id: String)
+signal run_started(planet_id: String, difficulty: int)
 
 const PANEL  := Color("3a2622")
 const INK    := Color("f6e7cf")
@@ -12,16 +13,16 @@ const GREEN  := Color("8fd35f")
 
 var last_summary: Dictionary = {}
 
-var _selected_planet := ""
-var _credits_label: Label
-var _launch_btn: Button
+var _selected_planet     := ""
+var _selected_difficulty := 1
+var _planet_buttons: Array   = []
+var _diff_buttons: Array     = []
+var _weapon_buttons: Array   = []
+var _param_buttons: Dictionary = {}
+var _tree_tab       := "navigation"
 var _summary_label: Label
-var _market_content: VBoxContainer
-var _skills_content: VBoxContainer
-var _planet_buttons: Array = []   # [{id, btn}]
-var _weapon_buttons: Array = []   # [{id, btn}]
-var _param_buttons: Dictionary = {}  # option_key -> [{value, btn}]
-var _skills_tab := "general"
+var _inventory_label: Label
+var _tree_content: VBoxContainer
 
 
 func _ready() -> void:
@@ -60,35 +61,29 @@ func _ready() -> void:
 	cols.add_child(right)
 
 	_build_planet_section(left)
+	_build_difficulty_section(left)
 	_build_weapon_section(left)
 	_build_params_section(left)
 	_build_summary_section(left)
-	_market_content = _section(right, "Marché")
-	_skills_content = _section(right, "Compétences")
+	_build_inventory_section(right)
+	_tree_content = _section(right, "Recherche — Arbre de compétences")
 	_build_launch_row(root)
 
 	var unlocked: Dictionary = SaveGame.data["unlocked"]
 	var prev: String = String(SaveGame.data["selected_planet"])
 	_selected_planet = prev if unlocked.has(prev) else unlocked.keys()[0]
+	_selected_difficulty = int(SaveGame.data.get("selected_difficulty", 1))
 
 	_refresh()
 
 
-# --- Construction initiale ------------------------------------------------
+# --- Construction -------------------------------------------------------
 
 func _build_header(parent: Node) -> void:
-	var row := HBoxContainer.new()
-	parent.add_child(row)
-
 	var title := Label.new()
 	_style_label(title, 30, ACCENT)
 	title.text = "Vaisseau-mère"
-	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(title)
-
-	_credits_label = Label.new()
-	_style_label(_credits_label, 20, INK)
-	row.add_child(_credits_label)
+	parent.add_child(title)
 
 
 func _build_planet_section(parent: Node) -> void:
@@ -96,7 +91,6 @@ func _build_planet_section(parent: Node) -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 10)
 	content.add_child(row)
-
 	var unlocked: Dictionary = SaveGame.data["unlocked"]
 	for id in GameData.PLANETS:
 		if not unlocked.has(id):
@@ -113,6 +107,34 @@ func _build_planet_section(parent: Node) -> void:
 		)
 		row.add_child(btn)
 		_planet_buttons.append({"id": id, "btn": btn})
+
+
+func _build_difficulty_section(parent: Node) -> void:
+	var content := _section(parent, "Difficulté", false)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	content.add_child(row)
+	var diffs := [
+		[1, "Exploration"],
+		[2, "Normal"],
+		[3, "Hostile"],
+		[4, "Extrême"],
+		[5, "Infernal"],
+	]
+	for d in diffs:
+		var diff_level: int = d[0]
+		var diff_name:  String = d[1]
+		var btn := Button.new()
+		btn.text = diff_name
+		btn.custom_minimum_size = Vector2(100, 40)
+		btn.add_theme_font_size_override("font_size", 13)
+		var dl: int = diff_level
+		btn.pressed.connect(func() -> void:
+			_selected_difficulty = dl
+			_refresh()
+		)
+		row.add_child(btn)
+		_diff_buttons.append({"level": diff_level, "btn": btn})
 
 
 func _build_weapon_section(parent: Node) -> void:
@@ -141,7 +163,7 @@ func _build_params_section(parent: Node) -> void:
 	var content := _section(parent, "Paramètres", false)
 	var defs: Array = [
 		{"key": "control_mode", "label": "Pilotage", "opts": [["Libre", "free"], ["Inertie", "inertia"]]},
-		{"key": "auto_fire",    "label": "Tir",      "opts": [["Manuel", false],  ["Auto", true]]},
+		{"key": "auto_fire",    "label": "Tir",      "opts": [["Manuel", false], ["Auto", true]]},
 	]
 	for d: Dictionary in defs:
 		var row := HBoxContainer.new()
@@ -156,7 +178,7 @@ func _build_params_section(parent: Node) -> void:
 		_param_buttons[key] = []
 		for opt: Array in d["opts"]:
 			var opt_label: String = opt[0]
-			var opt_val: Variant = opt[1]
+			var opt_val: Variant  = opt[1]
 			var btn := Button.new()
 			btn.text = opt_label
 			btn.custom_minimum_size = Vector2(88, 32)
@@ -172,165 +194,133 @@ func _build_params_section(parent: Node) -> void:
 
 
 func _build_summary_section(parent: Node) -> void:
-	var content := _section(parent, "Dernière run")
+	var content := _section(parent, "Dernière expédition")
 	_summary_label = Label.new()
 	_style_label(_summary_label, 13, INK)
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_summary_label)
 
 
+func _build_inventory_section(parent: Node) -> void:
+	var content := _section(parent, "Entrepôt")
+	_inventory_label = Label.new()
+	_style_label(_inventory_label, 13, INK)
+	_inventory_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_inventory_label)
+
+
 func _build_launch_row(parent: Node) -> void:
 	var row := HBoxContainer.new()
 	parent.add_child(row)
-
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
+	var launch_btn := Button.new()
+	launch_btn.text = "Lancer →"
+	launch_btn.custom_minimum_size = Vector2(200, 56)
+	launch_btn.add_theme_font_size_override("font_size", 22)
+	launch_btn.add_theme_color_override("font_color", Color("1a0d0a"))
+	launch_btn.add_theme_stylebox_override("normal",  _box(ACCENT, 14, 0))
+	launch_btn.add_theme_stylebox_override("hover",   _box(ACCENT.lerp(Color.WHITE, 0.15), 14, 0))
+	launch_btn.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.2), 14, 0))
+	launch_btn.pressed.connect(func() -> void: run_started.emit(_selected_planet, _selected_difficulty))
+	row.add_child(launch_btn)
 
-	_launch_btn = Button.new()
-	_launch_btn.text = "Lancer →"
-	_launch_btn.custom_minimum_size = Vector2(200, 56)
-	_launch_btn.add_theme_font_size_override("font_size", 22)
-	_launch_btn.add_theme_color_override("font_color", Color("1a0d0a"))
-	_launch_btn.add_theme_stylebox_override("normal",  _box(ACCENT, 14, 0))
-	_launch_btn.add_theme_stylebox_override("hover",   _box(ACCENT.lerp(Color.WHITE, 0.15), 14, 0))
-	_launch_btn.add_theme_stylebox_override("pressed", _box(ACCENT.darkened(0.2), 14, 0))
-	_launch_btn.pressed.connect(func() -> void: run_started.emit(_selected_planet))
-	row.add_child(_launch_btn)
 
-
-# --- Rafraîchissement dynamique -------------------------------------------
+# --- Rafraîchissement -----------------------------------------------
 
 func _refresh() -> void:
-	var credits: int = int(SaveGame.data["credits"])
-	_credits_label.text = "%d cr" % credits
-
-	# Styles armes
-	var equipped_weapon: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
-	for entry in _weapon_buttons:
+	# Planètes
+	for entry in _planet_buttons:
 		var btn: Button = entry["btn"]
-		var sel: bool = entry["id"] == equipped_weapon
+		var sel: bool   = entry["id"] == _selected_planet
 		btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
 		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
 		btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
 
-	# Styles planètes
-	for entry in _planet_buttons:
+	# Difficultés
+	for entry in _diff_buttons:
 		var btn: Button = entry["btn"]
-		var selected: bool = entry["id"] == _selected_planet
-		btn.add_theme_stylebox_override("normal", _box(ACCENT if selected else Color("4a302a"), 10))
-		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if selected else Color("5a3a30"), 10))
-		btn.add_theme_color_override("font_color", Color("1a0d0a") if selected else INK)
+		var sel: bool   = entry["level"] == _selected_difficulty
+		btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
+		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
+		btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
 
-	# Styles paramètres
+	# Armes
+	var equipped_weapon: String = String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
+	for entry in _weapon_buttons:
+		var btn: Button = entry["btn"]
+		var sel: bool   = entry["id"] == equipped_weapon
+		btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
+		btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
+		btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
+
+	# Paramètres
 	var options: Dictionary = SaveGame.data["options"]
 	for key: String in _param_buttons:
 		var current: Variant = options.get(key)
 		for entry: Dictionary in _param_buttons[key]:
 			var btn: Button = entry["btn"]
-			var sel: bool = entry["value"] == current
+			var sel: bool   = entry["value"] == current
 			btn.add_theme_stylebox_override("normal", _box(ACCENT if sel else Color("4a302a"), 10))
 			btn.add_theme_stylebox_override("hover",  _box(ACCENT.lerp(Color.WHITE, 0.1) if sel else Color("5a3a30"), 10))
 			btn.add_theme_color_override("font_color", Color("1a0d0a") if sel else INK)
 
-	# Résumé de run
-	var history: Array = SaveGame.data["history"]
+	# Résumé
+	var history: Array   = SaveGame.data["history"]
 	var summary: Dictionary = last_summary if not last_summary.is_empty() \
 		else (history[0] if not history.is_empty() else {})
 	if summary.is_empty():
-		_summary_label.text = "Aucune run effectuée."
+		_summary_label.text = "Aucune expédition effectuée."
 	else:
 		var lines: PackedStringArray = []
+		var mins := int(summary.get("seconds", 0)) / 60
+		var secs := int(summary.get("seconds", 0)) % 60
 		if summary.get("success", false):
-			lines.append("Extraction — %d secteur(s)" % int(summary.get("sectors", 0)))
+			lines.append("Extraction réussie — %02d:%02d — Niv.%d" % [mins, secs, int(summary.get("level", 0))])
 		else:
-			lines.append("Coque détruite — %d secteur(s)" % int(summary.get("sectors", 0)))
+			lines.append("Vaisseau détruit — %02d:%02d — Niv.%d" % [mins, secs, int(summary.get("level", 0))])
+		lines.append("Éliminations : %d / %d" % [int(summary.get("kills", 0)), 5 + int(summary.get("difficulty", 1)) * 5])
 		var kept: Dictionary = summary.get("kept", {})
 		for rid in kept:
 			if int(kept[rid]) > 0 and GameData.RESOURCES.has(rid):
-				lines.append("  %s : %d" % [GameData.RESOURCES[rid]["name"], int(kept[rid])])
-		var sum_cr: int = int(summary.get("credits", 0))
-		if sum_cr > 0:
-			lines.append("  +%d cr" % sum_cr)
-		var unlocked_id: String = String(summary.get("unlocked", ""))
-		if not unlocked_id.is_empty() and GameData.PLANETS.has(unlocked_id):
-			lines.append("★ Nouvelle planète débloquée : %s !" % GameData.PLANETS[unlocked_id]["name"])
+				lines.append("  +%d %s" % [int(kept[rid]), GameData.RESOURCES[rid]["name"]])
 		_summary_label.text = "\n".join(lines)
 
-	_rebuild_market(credits)
-	_rebuild_skills(credits)
-	_launch_btn.disabled = _selected_planet == ""
-
-
-func _rebuild_market(credits: int) -> void:
-	for child in _market_content.get_children():
-		child.queue_free()
-
+	# Inventaire
 	var inventory: Dictionary = SaveGame.data["inventory"]
-	var has_items := false
-	for id in inventory:
-		var qty: int = int(inventory.get(id, 0))
-		if qty <= 0 or not GameData.RESOURCES.has(id):
-			continue
-		has_items = true
-		var res: Dictionary = GameData.RESOURCES[id]
-		var price := qty * int(res["base"])
+	if inventory.is_empty():
+		_inventory_label.text = "Vide"
+	else:
+		var parts: PackedStringArray = []
+		for id in inventory:
+			var qty := int(inventory.get(id, 0))
+			if qty > 0 and GameData.RESOURCES.has(id):
+				parts.append("%s : %d" % [GameData.RESOURCES[id]["name"], qty])
+		_inventory_label.text = "\n".join(parts) if parts.size() > 0 else "Vide"
 
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		_market_content.add_child(row)
+	# Arbre de compétences
+	_rebuild_tree()
 
-		var name_lbl := Label.new()
-		_style_label(name_lbl, 14, INK)
-		name_lbl.text = "%s ×%d" % [res["name"], qty]
-		name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(name_lbl)
-
-		var price_lbl := Label.new()
-		_style_label(price_lbl, 14, ACCENT)
-		price_lbl.text = "%d cr" % price
-		row.add_child(price_lbl)
-
-		var sell_id: String = id
-		var btn := _small_btn("Vendre", true)
-		btn.pressed.connect(func() -> void: _sell(sell_id))
-		row.add_child(btn)
-
-	if not has_items:
-		var lbl := Label.new()
-		_style_label(lbl, 13, MUTED)
-		lbl.text = "Inventaire vide"
-		_market_content.add_child(lbl)
-		return
-
-	var sell_all := _small_btn("Tout vendre", true)
-	sell_all.add_theme_stylebox_override("normal", _box(GREEN, 8))
-	sell_all.add_theme_stylebox_override("hover",  _box(GREEN.lerp(Color.WHITE, 0.1), 8))
-	sell_all.pressed.connect(_sell_all)
-	_market_content.add_child(sell_all)
+	# Sauvegarde de la sélection
+	SaveGame.data["selected_planet"]     = _selected_planet
+	SaveGame.data["selected_difficulty"] = _selected_difficulty
 
 
-func _rebuild_skills(_credits: int) -> void:
-	for child in _skills_content.get_children():
+func _rebuild_tree() -> void:
+	for child in _tree_content.get_children():
 		child.queue_free()
 
-	# --- Onglets ---
-	var tab_defs := [
-		["general",  "Général"],
-		["blaster",  "Blaster"],
-		["laser",    "Laser"],
-		["launcher", "Roquettes"],
-		["flame",    "Lance-flammes"],
-	]
+	# Onglets des 4 arbres
+	var tree_tabs := [["navigation", "Navigation"], ["logistique", "Logistique"], ["armement", "Armement"], ["minage", "Minage"]]
 	var tabs_row := HBoxContainer.new()
 	tabs_row.add_theme_constant_override("separation", 4)
-	_skills_content.add_child(tabs_row)
-
-	for tab_def in tab_defs:
-		var tab_id: String = tab_def[0]
+	_tree_content.add_child(tabs_row)
+	for tab_def in tree_tabs:
+		var tab_id: String  = tab_def[0]
 		var tab_lbl: String = tab_def[1]
-		var active := tab_id == _skills_tab
-		var col := ACCENT if active else Color("3a2a28")
+		var active := tab_id == _tree_tab
+		var col    := ACCENT if active else Color("3a2a28")
 		var tab_btn := Button.new()
 		tab_btn.text = tab_lbl
 		tab_btn.add_theme_font_size_override("font_size", 12)
@@ -340,27 +330,33 @@ func _rebuild_skills(_credits: int) -> void:
 		tab_btn.add_theme_color_override("font_color", Color("1a0d0a") if active else INK)
 		if not active:
 			var captured: String = tab_id
-			tab_btn.pressed.connect(func() -> void: _switch_skills_tab(captured))
+			tab_btn.pressed.connect(func() -> void:
+				_tree_tab = captured
+				call_deferred("_refresh")
+			)
 		tabs_row.add_child(tab_btn)
 
 	var sep := Control.new()
 	sep.custom_minimum_size = Vector2(0, 2)
-	_skills_content.add_child(sep)
+	_tree_content.add_child(sep)
 
-	# --- Compétences de l'onglet actif ---
-	var credits: int = int(SaveGame.data["credits"])
+	# Compétences de l'onglet actif
+	var inventory: Dictionary = SaveGame.data["inventory"]
 	for id in GameData.SKILLS:
 		var def: Dictionary = GameData.SKILLS[id]
-		if String(def.get("tab", "general")) != _skills_tab:
+		if String(def.get("tab", "")) != _tree_tab:
 			continue
-		var level: int = SaveGame.skill(id)
+		var level:     int = SaveGame.skill(id)
 		var max_level: int = int(def["max"])
-		var cost: int = int(def["cost"]) * (level + 1)
-		var can_buy: bool = credits >= cost and level < max_level
+		var res_id:  String = String(def["cost_res"])
+		var cost:      int = int(def["cost"]) * (level + 1)
+		var have:      int = int(inventory.get(res_id, 0))
+		var can_buy: bool  = have >= cost and level < max_level
+		var res_name: String = GameData.RESOURCES[res_id]["name"] if GameData.RESOURCES.has(res_id) else res_id
 
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
-		_skills_content.add_child(row)
+		_tree_content.add_child(row)
 
 		var info := VBoxContainer.new()
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -376,73 +372,29 @@ func _rebuild_skills(_credits: int) -> void:
 
 		var desc_lbl := Label.new()
 		_style_label(desc_lbl, 12, MUTED)
-		desc_lbl.text = def["desc"]
+		desc_lbl.text = "%s — coût : %d %s" % [def["desc"], cost, res_name]
 		info.add_child(desc_lbl)
 
 		var btn: Button
 		if level >= max_level:
 			btn = _small_btn("MAX", false)
 		else:
-			btn = _small_btn("%d cr" % cost, can_buy)
+			btn = _small_btn("%d %s" % [cost, res_name], can_buy)
 			var skill_id: String = id
-			btn.pressed.connect(func() -> void: _buy_skill(skill_id))
+			btn.pressed.connect(func() -> void:
+				if SaveGame.buy_skill(skill_id):
+					call_deferred("_refresh")
+			)
 		row.add_child(btn)
 
 
-func _switch_skills_tab(tab_id: String) -> void:
-	_skills_tab = tab_id
-	call_deferred("_refresh")
-
-
-# --- Actions --------------------------------------------------------------
-
-func _sell(id: String) -> void:
-	var inventory: Dictionary = SaveGame.data["inventory"]
-	var qty: int = int(inventory.get(id, 0))
-	if qty <= 0 or not GameData.RESOURCES.has(id):
-		return
-	SaveGame.data["credits"] = int(SaveGame.data["credits"]) + qty * int(GameData.RESOURCES[id]["base"])
-	inventory.erase(id)
-	SaveGame.save_game()
-	call_deferred("_refresh")
-
-
-func _sell_all() -> void:
-	var inventory: Dictionary = SaveGame.data["inventory"]
-	var total := 0
-	for id in inventory:
-		var qty: int = int(inventory.get(id, 0))
-		if qty > 0 and GameData.RESOURCES.has(id):
-			total += qty * int(GameData.RESOURCES[id]["base"])
-	inventory.clear()
-	SaveGame.data["credits"] = int(SaveGame.data["credits"]) + total
-	SaveGame.save_game()
-	call_deferred("_refresh")
-
-
-func _buy_skill(id: String) -> void:
-	var def: Dictionary = GameData.SKILLS[id]
-	var level: int = SaveGame.skill(id)
-	if level >= int(def["max"]):
-		return
-	var cost: int = int(def["cost"]) * (level + 1)
-	var credits: int = int(SaveGame.data["credits"])
-	if credits < cost:
-		return
-	SaveGame.data["credits"] = credits - cost
-	var skills: Dictionary = SaveGame.data["skills"]
-	skills[id] = level + 1
-	SaveGame.save_game()
-	call_deferred("_refresh")
-
-
-# --- Helpers UI -----------------------------------------------------------
+# --- Helpers UI -------------------------------------------------
 
 func _small_btn(label: String, active: bool) -> Button:
 	var btn := Button.new()
 	btn.text = label
-	btn.custom_minimum_size = Vector2(90, 32)
-	btn.add_theme_font_size_override("font_size", 13)
+	btn.custom_minimum_size = Vector2(110, 32)
+	btn.add_theme_font_size_override("font_size", 12)
 	btn.disabled = not active
 	var col := Color("4a302a") if active else Color("2a1a18")
 	btn.add_theme_stylebox_override("normal", _box(col, 8))
@@ -457,16 +409,13 @@ func _section(parent: Node, title: String, expand: bool = true) -> VBoxContainer
 	if expand:
 		panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	parent.add_child(panel)
-
 	var outer := VBoxContainer.new()
 	outer.add_theme_constant_override("separation", 10)
 	panel.add_child(outer)
-
 	var title_lbl := Label.new()
 	_style_label(title_lbl, 14, ACCENT)
 	title_lbl.text = title.to_upper()
 	outer.add_child(title_lbl)
-
 	var content := VBoxContainer.new()
 	content.add_theme_constant_override("separation", 6)
 	outer.add_child(content)
@@ -480,12 +429,12 @@ func _style_label(label: Label, size: int, color: Color) -> void:
 
 func _box(color: Color, radius: int, border: int = 2) -> StyleBoxFlat:
 	var box := StyleBoxFlat.new()
-	box.bg_color = color
+	box.bg_color     = color
 	box.border_color = DrawUtils.OUTLINE
 	box.set_border_width_all(border)
 	box.set_corner_radius_all(radius)
-	box.content_margin_left = 12
-	box.content_margin_right = 12
-	box.content_margin_top = 8
+	box.content_margin_left   = 12
+	box.content_margin_right  = 12
+	box.content_margin_top    = 8
 	box.content_margin_bottom = 8
 	return box

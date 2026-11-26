@@ -1,36 +1,36 @@
 class_name Rock
 extends StaticBody2D
-## Roche destructible. Bloque le vaisseau et les tirs ennemis (sert de couvert).
+## Roche destructible. Bloque le vaisseau. Les gisements (ore, gold) sont minables à l'arrêt.
 
 signal destroyed(rock: Rock)
 
 const COLORS := {
-	"hard": Color(0.365, 0.392, 0.439),
-	"gold": Color(1.0, 0.773, 0.239),
-	"chest": Color(0.604, 0.353, 0.180),
+	"hard":   Color(0.365, 0.392, 0.439),
+	"gold":   Color(1.0, 0.773, 0.239),
+	"chest":  Color(0.604, 0.353, 0.180),
 	"repair": Color(0.561, 0.827, 0.373),
 }
 
-var kind := "rock"
-var radius := 24.0
-var hp := 3.0
-var max_hp := 3.0
-var flash := 0.0
+var kind    := "rock"
+var radius  := 24.0
+var hp      := 3.0
+var max_hp  := 3.0
+var flash   := 0.0
 var _points := PackedVector2Array()
 
 
-func setup(rock_kind: String, sector_number: int) -> void:
+func setup(rock_kind: String, difficulty: int = 1) -> void:
 	kind = rock_kind
 	var def: Dictionary = GameData.ROCKS[kind]
 	var range_r: Array = def["radius"]
 	radius = randf_range(range_r[0], range_r[1])
-	max_hp = float(def["hp"]) * (1.0 + 0.25 * (sector_number - 1))
+	max_hp = float(def["hp"]) * (1.0 + 0.2 * (difficulty - 1))
 	hp = max_hp
 
 
 func _ready() -> void:
 	collision_layer = GameData.LAYER_ROCKS
-	collision_mask = 0
+	collision_mask  = 0
 	($CollisionShape2D.shape as CircleShape2D).radius = radius
 	for i in 9:
 		var a := TAU * i / 9.0
@@ -47,6 +47,15 @@ func take_hit(amount: float) -> void:
 		destroyed.emit(self)
 		queue_free()
 	queue_redraw()
+
+
+## Minage automatique — appelé par sector.gd quand le vaisseau est immobile à portée.
+func mine(power: float) -> void:
+	take_hit(power)
+
+
+func is_mineable() -> bool:
+	return bool(GameData.ROCKS[kind].get("mineable", false))
 
 
 func _process(delta: float) -> void:

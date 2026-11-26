@@ -1,6 +1,6 @@
 class_name Sector
 extends Node2D
-## Un secteur d'une run : roches, ennemis, menace, événements, quota et balise d'extraction.
+## Expédition complète : carte procédurale, minage auto, mission, extraction volontaire.
 
 const _SHIP_SCENE    = preload("res://scenes/ship/ship.tscn")
 const _ROCK_SCENE    = preload("res://scenes/world/rock.tscn")
@@ -15,8 +15,6 @@ const _ENEMY_SCENES  = {
 signal cleared
 signal announced(text: String)
 
-const BEACON_RADIUS := 46.0
-
 var planet: Dictionary
 var ship: Ship
 var rocks: Node2D
@@ -25,38 +23,61 @@ var enemies: Node2D
 var projectiles: Node2D
 var effects: Node2D
 
-var spawn_timer := 4.0
-var rock_timer := 0.0
-var event_timer := 10.0
-var beacon_active := false
-var beacon_position := Vector2.ZERO
-var beacon_progress := 0.0
-var shake := 0.0
-var _time := 0.0
+var spawn_timer  := 4.0
+var rock_timer   := 0.0
+var shake        := 0.0
+var _time        := 0.0
 var _decor: Array[Rect2] = []
-var _boss_alive := 0
+
+# Minage
+var _mine_target: Rock = null
+
+# Extraction
+var _extracting      := false
+var _extract_timer   := 0.0
+
+# Événements
+var _next_event_time := 60.0
 
 
 func _ready() -> void:
 	planet = RunState.planet()
-	rocks = _layer("Roches")
-	pickups = _layer("Butin")
-	enemies = _layer("Ennemis")
-	ship = _SHIP_SCENE.instantiate()
-	ship.position = GameData.ARENA * Vector2(0.5, 0.7)
+
+	rocks       = _layer("Roches")
+	pickups     = _layer("Butin")
+	enemies     = _layer("Ennemis")
+	ship        = _SHIP_SCENE.instantiate()
+	ship.position = GameData.MAP_SIZE * Vector2(0.5, 0.5)
 	add_child(ship)
 	projectiles = _layer("Tirs")
-	effects = _layer("Effets")
+	effects     = _layer("Effets")
 	ship.projectiles = projectiles
 	ship.damaged.connect(_on_ship_damaged)
+
+	# Camera qui suit le vaisseau dans les limites de la carte
+	var camera := Camera2D.new()
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed   = 7.0
+	camera.limit_left   = 0
+	camera.limit_top    = 0
+	camera.limit_right  = int(GameData.MAP_SIZE.x)
+	camera.limit_bottom = int(GameData.MAP_SIZE.y)
+	ship.add_child(camera)
+
 	_build_walls()
-	for i in int(round(float(GameData.CONFIG["rocks"]) * RunState.sector_rock_mult())):
+
+	for _i in int(round(float(GameData.CONFIG["rocks"]))):
 		spawn_rock()
-	for i in 26:
-		_decor.append(Rect2(randf() * GameData.ARENA.x, randf() * GameData.ARENA.y, randf_range(20, 70), randf_range(10, 30)))
-	event_timer = randf_range(8.0, 12.0)
-	if RunState.sector % 3 == 0:
-		_spawn_boss_wave()
+
+	for _i in 80:
+		_decor.append(Rect2(
+			randf() * GameData.MAP_SIZE.x, randf() * GameData.MAP_SIZE.y,
+			randf_range(20, 70), randf_range(10, 30)
+		))
+
+	_next_event_time = randf_range(60.0, 100.0)
+	announced.emit("Mission : éliminer %d ennemis" % RunState.mission_target)
+	announced.emit("Appuie sur TAB pour extraire après la mission")
 
 
 func _layer(layer_name: String) -> Node2D:
@@ -70,16 +91,16 @@ func _build_walls() -> void:
 	var walls := StaticBody2D.new()
 	walls.name = "Murs"
 	walls.collision_layer = GameData.LAYER_WALLS
-	walls.collision_mask = 0
+	walls.collision_mask  = 0
 	var sides := [
 		[Vector2.RIGHT, 0.0],
-		[Vector2.LEFT, -GameData.ARENA.x],
-		[Vector2.DOWN, 0.0],
-		[Vector2.UP, -GameData.ARENA.y],
+		[Vector2.LEFT,  -GameData.MAP_SIZE.x],
+		[Vector2.DOWN,  0.0],
+		[Vector2.UP,    -GameData.MAP_SIZE.y],
 	]
 	for side in sides:
 		var boundary := WorldBoundaryShape2D.new()
-		boundary.normal = side[0]
+		boundary.normal   = side[0]
 		boundary.distance = side[1]
 		var shape := CollisionShape2D.new()
 		shape.shape = boundary
@@ -89,25 +110,33 @@ func _build_walls() -> void:
 
 func _physics_process(delta: float) -> void:
 	_time += delta
-	var step := float(GameData.CONFIG["threat_step"])
-	RunState.threat += delta * float(GameData.CONFIG["threat_rate"]) * (1.0 + step * (RunState.sector - 1)) * RunState.sector_threat_mult()
 
+	RunState.tick(delta, _threat_mult())
+
+	# Vagues d'ennemis
 	spawn_timer -= delta
 	if spawn_timer <= 0.0:
 		_spawn_wave()
 		spawn_timer = maxf(0.8, float(GameData.CONFIG["spawn_base"]) - RunState.threat * 0.018)
 
-	event_timer -= delta
-	if event_timer <= 0.0:
+	# Événements
+	if _time >= _next_event_time:
 		_spawn_event()
-		event_timer = randf_range(GameData.CONFIG["event_min"], GameData.CONFIG["event_max"])
+		_next_event_time = _time + randf_range(70.0, 130.0)
 
+	# Maintien de la densité de roches
 	rock_timer -= delta
-	if rock_timer <= 0.0 and rocks.get_child_count() < int(round(float(GameData.CONFIG["rocks"]) * RunState.sector_rock_mult())):
-		rock_timer = 1.5
+	if rock_timer <= 0.0 and rocks.get_child_count() < int(GameData.CONFIG["rocks"]):
+		rock_timer = 2.0
 		spawn_rock()
 
-	_update_beacon(delta)
+	# Minage automatique
+	_update_mining(delta)
+
+	# Extraction
+	_update_extraction(delta)
+
+	RunState.is_mining = is_instance_valid(_mine_target)
 
 
 func _process(delta: float) -> void:
@@ -116,17 +145,86 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 
-func threat_level() -> int:
-	return int(RunState.threat / 20.0) + 1
+func _threat_mult() -> float:
+	match RunState.difficulty:
+		1: return 0.5
+		2: return 1.0
+		3: return 1.5
+		4: return 2.0
+		_: return 2.5
 
 
-# --- Roches et butin -------------------------------------------------------
+# --- Minage automatique -------------------------------------------
+
+func _update_mining(delta: float) -> void:
+	if not ship.is_stopped():
+		_mine_target = null
+		return
+	if not is_instance_valid(_mine_target):
+		_mine_target = _find_nearest_ore()
+	if not is_instance_valid(_mine_target):
+		return
+	var mine_range := float(GameData.CONFIG["mine_range"]) * (1.0 + 0.2 * SaveGame.skill("mine_range"))
+	if ship.position.distance_to(_mine_target.position) > mine_range:
+		_mine_target = null
+		return
+	var power := float(GameData.CONFIG["mine_base_rate"]) \
+		* (1.0 + 0.2 * SaveGame.skill("mine_speed")) \
+		* (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
+	_mine_target.mine(power * delta)
+	if not is_instance_valid(_mine_target):
+		_mine_target = null
+
+
+func _find_nearest_ore() -> Rock:
+	var best: Rock = null
+	var best_dist := INF
+	var mine_range := float(GameData.CONFIG["mine_range"]) * (1.0 + 0.2 * SaveGame.skill("mine_range"))
+	for rock in rocks.get_children():
+		var r := rock as Rock
+		if r == null or not r.is_mineable():
+			continue
+		var d := ship.position.distance_to(r.position)
+		if d < mine_range and d < best_dist:
+			best_dist = d
+			best = r
+	return best
+
+
+# --- Extraction volontaire ----------------------------------------
+
+func _update_extraction(delta: float) -> void:
+	if not RunState.mission_complete:
+		RunState.extract_progress = 0.0
+		return
+	if Input.is_action_just_pressed("extract") and ship.is_stopped() and not _extracting:
+		_extracting = true
+		_extract_timer = 0.0
+		announced.emit("Extraction en cours… reste immobile !")
+	if _extracting:
+		if not ship.is_stopped() or Input.is_action_just_pressed("dash"):
+			_extracting = false
+			_extract_timer = 0.0
+			RunState.extract_progress = 0.0
+			announced.emit("Extraction annulée !")
+			return
+		_extract_timer += delta
+		RunState.extract_progress = _extract_timer / float(GameData.CONFIG["extract_time"])
+		if _extract_timer >= float(GameData.CONFIG["extract_time"]):
+			_extracting = false
+			RunState.extract_progress = 1.0
+			cleared.emit()
+	else:
+		RunState.extract_progress = 0.0
+
+
+# --- Roches et butin -----------------------------------------------
 
 func spawn_rock(kind: String = "", at: Variant = null) -> void:
 	if kind == "":
 		kind = _pick_weighted(GameData.ROCKS)
 	var rock: Rock = _ROCK_SCENE.instantiate()
-	rock.setup(kind, RunState.sector)
+	rock.setup(kind, RunState.difficulty)
 	rock.position = at if at != null else _free_spot(rock.radius)
 	rock.destroyed.connect(_on_rock_destroyed)
 	rocks.add_child(rock)
@@ -134,9 +232,12 @@ func spawn_rock(kind: String = "", at: Variant = null) -> void:
 
 func _free_spot(radius: float) -> Vector2:
 	var spot := Vector2.ZERO
-	for attempt in 40:
-		spot = Vector2(randf_range(50, GameData.ARENA.x - 50), randf_range(50, GameData.ARENA.y - 50))
-		var clear := spot.distance_to(ship.position) > 140.0
+	for _attempt in 40:
+		spot = Vector2(
+			randf_range(50, GameData.MAP_SIZE.x - 50),
+			randf_range(50, GameData.MAP_SIZE.y - 50)
+		)
+		var clear := spot.distance_to(ship.position) > 160.0
 		for other in rocks.get_children():
 			var r := other as Rock
 			if r and spot.distance_to(r.position) < r.radius + radius + 30.0:
@@ -160,38 +261,39 @@ func _pick_weighted(table: Dictionary) -> String:
 
 
 func _on_rock_destroyed(rock: Rock) -> void:
-	var def: Dictionary = GameData.ROCKS[rock.kind]
 	Burst.spawn(effects, rock.position, rock.fill_color(), 40.0, 8)
+	var mult := RunState.get_mult()
+	# XP de minage (gisements uniquement — les armes ne peuvent pas les détruire)
+	match rock.kind:
+		"ore":  RunState.add_xp(2)
+		"gold": RunState.add_xp(5)
 	match rock.kind:
 		"ore":
-			var rare_id: String = String(planet.get("rare", ""))
+			var rare_id: String  = String(planet.get("rare", ""))
 			var is_rare := rare_id != "" and randf() < 0.2
-			var res_id := rare_id if is_rare else String(planet["res"])
-			var total := int(round(3.0 * RunState.mult))
-			_drop(rock.position, res_id, maxi(1, total), is_rare)
-			RunState.add_quota(maxi(1, total), is_rare)
+			var res_id  := rare_id if is_rare else String(planet["res"])
+			var total   := maxi(1, int(round(3.0 * mult)))
+			_drop(rock.position, res_id, total, is_rare)
 		"gold":
 			var rare_id: String = String(planet.get("rare", ""))
 			var is_rare := rare_id != ""
-			var res_id := rare_id if is_rare else String(planet["res"])
-			var total := int(round(3.0 * RunState.mult * 4.0))
-			_drop(rock.position, res_id, maxi(1, total), is_rare)
-			RunState.add_quota(maxi(1, total), is_rare)
+			var res_id  := rare_id if is_rare else String(planet["res"])
+			var total   := maxi(1, int(round(12.0 * mult)))
+			_drop(rock.position, res_id, total, is_rare)
 		"hard":
-			_credits(rock.position, int(round(4.0 * RunState.mult)))
+			_drop(rock.position, String(planet["res"]), 2, false)
 		"chest":
-			var amount := int(round(30.0 * RunState.mult))
-			_credits(rock.position, amount)
-			announced.emit("Coffre : +%d cr" % amount)
+			var total := maxi(2, int(round(8.0 * mult)))
+			_drop(rock.position, String(planet["res"]), total, false)
+			announced.emit("Coffre ouvert !")
 		"repair":
 			RunState.heal(12.0)
 			FloatText.spawn(effects, rock.position + Vector2(0, -20), "+12 coque", Color("8fd35f"))
-	pass  # XP uniquement via ramassage des drops ennemis
 
 
 func _drop(at: Vector2, resource_id: String, total: int, golden: bool) -> void:
 	var count := clampi(int(round(total / 3.0)), 1, 4)
-	var left := total
+	var left  := total
 	for i in count:
 		var amount := left if i == count - 1 else maxi(1, total / count)
 		left -= amount
@@ -199,125 +301,86 @@ func _drop(at: Vector2, resource_id: String, total: int, golden: bool) -> void:
 			continue
 		var p: Pickup = _PICKUP_SCENE.instantiate()
 		p.resource_id = resource_id
-		p.amount = amount
-		p.golden = golden
-		p.position = at
-		p.velocity = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(60, 160)
-		p.target = ship
-		p.effects = effects
+		p.amount      = amount
+		p.golden      = golden
+		p.position    = at
+		p.velocity    = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(60, 160)
+		p.target      = ship
+		p.effects     = effects
 		pickups.add_child(p)
 
 
-func _credits(at: Vector2, amount: int) -> void:
-	RunState.add_credits(amount)
-	FloatText.spawn(effects, at + Vector2(0, -14), "+%d cr" % amount, Color("fff1b8"))
-
-
-# --- Ennemis et événements -------------------------------------------------
+# --- Ennemis et événements ------------------------------------------
 
 func spawn_enemy(kind: String, at: Variant = null) -> void:
 	var enemy: Enemy = _ENEMY_SCENES[kind].instantiate()
-	enemy.setup(RunState.sector)
+	enemy.setup(RunState.difficulty)
 	enemy.position = at if at != null else _edge_point()
-	enemy.target = ship
-	enemy.shots = projectiles
+	enemy.target   = ship
+	enemy.shots    = projectiles
 	enemy.died.connect(_on_enemy_died)
 	enemies.add_child(enemy)
 
 
 func _edge_point() -> Vector2:
 	match randi() % 4:
-		0:
-			return Vector2(-20, randf() * GameData.ARENA.y)
-		1:
-			return Vector2(GameData.ARENA.x + 20, randf() * GameData.ARENA.y)
-		2:
-			return Vector2(randf() * GameData.ARENA.x, -20)
-		_:
-			return Vector2(randf() * GameData.ARENA.x, GameData.ARENA.y + 20)
+		0: return Vector2(-20, randf() * GameData.MAP_SIZE.y)
+		1: return Vector2(GameData.MAP_SIZE.x + 20, randf() * GameData.MAP_SIZE.y)
+		2: return Vector2(randf() * GameData.MAP_SIZE.x, -20)
+		_: return Vector2(randf() * GameData.MAP_SIZE.x, GameData.MAP_SIZE.y + 20)
 	return Vector2.ZERO
 
 
 func _spawn_wave() -> void:
-	var level := threat_level()
+	var lvl := RunState.threat_level()
 	var weights := {
-		"mite": {"weight": 4.0},
-		"gunner": {"weight": 1.5 if level >= 2 else 0.4},
-		"rammer": {"weight": 1.5 if level >= 2 else 0.3},
+		"mite":   {"weight": 4.0},
+		"gunner": {"weight": 1.5 if lvl >= 2 else 0.4},
+		"rammer": {"weight": 1.5 if lvl >= 2 else 0.3},
 	}
-	for i in 1 + level / 2:
+	for _i in 1 + lvl / 2:
 		var kind := _pick_weighted(weights)
 		if kind == "mite":
 			var origin := _edge_point()
-			for j in 3:
+			for _j in 3:
 				spawn_enemy("mite", origin + Vector2(randf_range(-30, 30), randf_range(-30, 30)))
 		else:
 			spawn_enemy(kind)
+	# Boss à partir de menace niveau 8
+	if lvl >= 8 and randf() < 0.08:
+		spawn_enemy("guardian")
 
 
 func _spawn_event() -> void:
 	match randi() % 3:
 		0:
-			for i in 10:
+			for _i in 10:
 				spawn_enemy("mite")
 			announced.emit("Essaim !")
 		1:
-			var x := -30.0 if randf() < 0.5 else GameData.ARENA.x + 30.0
+			var x := -30.0 if randf() < 0.5 else GameData.MAP_SIZE.x + 30.0
 			for i in 3:
-				spawn_enemy("gunner", Vector2(x, GameData.ARENA.y / 2.0 + (i - 1) * 90.0))
+				spawn_enemy("gunner", Vector2(x, GameData.MAP_SIZE.y / 2.0 + (i - 1) * 90.0))
 			announced.emit("Raid pirate !")
 		_:
-			for i in 3:
+			for _i in 3:
 				spawn_rock("gold")
 			announced.emit("Filon d'or détecté !")
 
 
 func _on_enemy_died(enemy: Enemy) -> void:
-	_credits(enemy.position, maxi(1, int(round(enemy.credits * RunState.mult * RunState.sector_credits_mult()))))
 	Burst.spawn(effects, enemy.position, Color("ff5a5f"), 30.0, 6)
-	# Drop ressource (XP obtenu en ramassant)
-	var xp_amount := enemy.xp * (2 if RunState.sector_type == "pirate" else 1)
+	# Drop ressource + XP
 	var p: Pickup = _PICKUP_SCENE.instantiate()
 	p.resource_id = String(planet["res"])
-	p.amount = maxi(1, enemy.xp)
-	p.xp = xp_amount
-	p.position = enemy.position
-	p.velocity = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(50, 120)
-	p.target = ship
-	p.effects = effects
+	p.amount      = 1
+	p.xp          = enemy.xp
+	p.position    = enemy.position
+	p.velocity    = Vector2.RIGHT.rotated(randf() * TAU) * randf_range(50, 120)
+	p.target      = ship
+	p.effects     = effects
 	pickups.add_child(p)
-
-
-func _spawn_boss_wave() -> void:
-	var tier := RunState.sector / 3
-	announced.emit("⚠ Secteur Gardien — défais le gardien avant d'extraire !")
-	for i in tier:
-		var boss: Enemy = _ENEMY_SCENES["guardian"].instantiate()
-		boss.setup(RunState.sector)
-		boss.position = Vector2(GameData.ARENA.x * 0.5 + (i - float(tier) / 2.0) * 130.0, -20.0)
-		boss.target = ship
-		boss.shots = projectiles
-		boss.died.connect(_on_boss_enemy_died)
-		boss.died.connect(_on_enemy_died)
-		enemies.add_child(boss)
-		_boss_alive += 1
-	for i in (tier + 1):
-		var escort: Enemy = _ENEMY_SCENES["gunner"].instantiate()
-		escort.setup(RunState.sector)
-		escort.position = _edge_point()
-		escort.target = ship
-		escort.shots = projectiles
-		escort.died.connect(_on_boss_enemy_died)
-		escort.died.connect(_on_enemy_died)
-		enemies.add_child(escort)
-		_boss_alive += 1
-
-
-func _on_boss_enemy_died(_enemy: Enemy) -> void:
-	_boss_alive -= 1
-	if _boss_alive <= 0:
-		announced.emit("Gardien vaincu !")
-		RunState.add_xp(10)
+	RunState.add_kill()
 
 
 func _on_ship_damaged() -> void:
@@ -325,41 +388,33 @@ func _on_ship_damaged() -> void:
 	FloatText.spawn(effects, ship.position + Vector2(0, -28), "touché", Color("ff5a5f"))
 
 
-# --- Extraction ------------------------------------------------------------
-
-func _update_beacon(delta: float) -> void:
-	if not beacon_active and RunState.quota_reached() and _boss_alive <= 0:
-		beacon_active = true
-		beacon_position = _free_spot(BEACON_RADIUS)
-		announced.emit("Quota atteint : rejoins la balise d'extraction !")
-	if not beacon_active:
-		return
-	if ship.position.distance_to(beacon_position) < BEACON_RADIUS:
-		beacon_progress += delta
-		if beacon_progress >= float(GameData.CONFIG["extract_time"]):
-			beacon_active = false
-			cleared.emit()
-	else:
-		beacon_progress = maxf(0.0, beacon_progress - delta * 2.0)
-
-
-# --- Dessin du sol et de la balise -----------------------------------------
+# --- Dessin du sol + effets -----------------------------------------
 
 func _draw() -> void:
-	draw_rect(Rect2(Vector2(-20, -20), GameData.ARENA + Vector2(40, 40)), planet["bg"])
+	# Fond de la planète (couvre toute la carte + marge)
+	draw_rect(Rect2(Vector2(-20, -20), GameData.MAP_SIZE + Vector2(40, 40)), planet["bg"])
 	for d in _decor:
 		draw_colored_polygon(DrawUtils.ellipse_points(d.position, d.size.x, d.size.y, 16), planet["spot"])
-	if beacon_active:
-		var green := Color("8fd35f")
-		draw_circle(beacon_position, BEACON_RADIUS, Color(green, 0.18))
-		var offset := fmod(_time * 1.5, 1.0) * 0.4
-		for i in 12:
-			var a := TAU * (i / 12.0 + offset)
-			draw_arc(beacon_position, BEACON_RADIUS, a, a + TAU / 24.0, 6, green, 4.0)
-		if beacon_progress > 0.0:
-			var ratio := beacon_progress / float(GameData.CONFIG["extract_time"])
-			draw_arc(beacon_position, BEACON_RADIUS + 8.0, -PI / 2.0, -PI / 2.0 + TAU * ratio, 48, Color("fff1b8"), 6.0)
-		var font := ThemeDB.fallback_font
-		var label_pos := beacon_position + Vector2(-60, 5)
-		draw_string_outline(font, label_pos, "Extraction", HORIZONTAL_ALIGNMENT_CENTER, 120, 15, 5, DrawUtils.OUTLINE)
-		draw_string(font, label_pos, "Extraction", HORIZONTAL_ALIGNMENT_CENTER, 120, 15, green)
+
+	# Faisceau de minage
+	if is_instance_valid(_mine_target):
+		var beam_color := Color("7ed4f5")
+		var from := ship.global_position
+		var to   := _mine_target.global_position
+		var t    := fmod(_time * 3.0, 1.0)
+		draw_line(from, to, Color(beam_color, 0.3 + 0.4 * sin(_time * 20.0)), 3.0)
+		draw_circle(to, 8.0 + 4.0 * sin(_time * 15.0), Color(beam_color, 0.6))
+
+	# Anneau d'extraction
+	if _extracting:
+		var ratio := _extract_timer / float(GameData.CONFIG["extract_time"])
+		var col   := Color("8fd35f")
+		draw_arc(ship.global_position, 28.0, -PI / 2.0, -PI / 2.0 + TAU * ratio, 48, col, 5.0)
+		draw_circle(ship.global_position, 24.0, Color(col, 0.12))
+
+	# Indicateur "TAB pour extraire" quand mission accomplie
+	if RunState.mission_complete and not _extracting:
+		var font      := ThemeDB.fallback_font
+		var label_pos := ship.global_position + Vector2(-80, -50)
+		draw_string_outline(font, label_pos, "TAB : Extraire", HORIZONTAL_ALIGNMENT_CENTER, 160, 14, 5, DrawUtils.OUTLINE)
+		draw_string(font, label_pos, "TAB : Extraire", HORIZONTAL_ALIGNMENT_CENTER, 160, 14, Color("8fd35f"))

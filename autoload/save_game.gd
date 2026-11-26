@@ -1,5 +1,5 @@
 extends Node
-## Sauvegarde persistante entre les runs (fichier JSON dans le dossier utilisateur de Godot).
+## Sauvegarde persistante entre les runs (fichier JSON dans le dossier utilisateur).
 
 const PATH := "user://save.json"
 
@@ -12,15 +12,15 @@ func _ready() -> void:
 
 func default_data() -> Dictionary:
 	return {
-		"credits": 0,
-		"inventory": {},          # ressource -> quantité (entrepôt, illimité)
+		"inventory": {},          # ressource -> quantité (entrepôt permanent)
 		"skills": {},             # compétence -> niveau
 		"unlocked": {"roc": true},
 		"boss_killed": {},
-		"found": {"fer": true},   # ressources déjà découvertes
+		"found": {"fer": true},
 		"weapons": {"blaster": true},
 		"equipped": {"weapon": "blaster"},
 		"selected_planet": "roc",
+		"selected_difficulty": 1,
 		"options": {"control_mode": "free", "auto_fire": false},
 		"history": [],
 	}
@@ -39,6 +39,8 @@ func load_game() -> void:
 	# Migration : ancien format "equipped" = String → {"weapon": String}
 	if data["equipped"] is String:
 		data["equipped"] = {"weapon": String(data["equipped"])}
+	# Migration : suppression de l'ancien champ "credits"
+	data.erase("credits")
 
 
 func save_game() -> void:
@@ -57,3 +59,27 @@ func skill(id: String) -> int:
 func option(key: String) -> Variant:
 	var options: Dictionary = data["options"]
 	return options.get(key)
+
+
+## Dépense des ressources de l'inventaire pour acheter une compétence.
+## Retourne true si l'achat a réussi.
+func buy_skill(id: String) -> bool:
+	if not GameData.SKILLS.has(id):
+		return false
+	var def: Dictionary = GameData.SKILLS[id]
+	var level := skill(id)
+	if level >= int(def["max"]):
+		return false
+	var res_id: String = String(def["cost_res"])
+	var cost: int = int(def["cost"]) * (level + 1)
+	var inventory: Dictionary = data["inventory"]
+	var have := int(inventory.get(res_id, 0))
+	if have < cost:
+		return false
+	inventory[res_id] = have - cost
+	if int(inventory[res_id]) <= 0:
+		inventory.erase(res_id)
+	var skills: Dictionary = data["skills"]
+	skills[id] = level + 1
+	save_game()
+	return true
