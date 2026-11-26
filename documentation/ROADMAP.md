@@ -13,8 +13,8 @@ Ordre proposé, sans estimation calendaire. Ne pas produire les 8 planètes avan
 | 6 Bêta | 3 planètes, 3 difficultés, tank/sniper, prérequis compétences | ✅ Terminé |
 | 7 Production | 8 planètes, 57 ressources, boss planétaire, extraction révisée | ✅ Terminé |
 | UI | Refonte hub : layout 3 colonnes, 6 sections, carte planètes, hub.tscn | ✅ Terminé |
-| 8 Contenu | Minage par arme (V5), 6 vaisseaux, 60 évolutions, 240 nœuds permanents | 🔲 À faire |
-| 9 Polish | Équilibrage, événements planétaires, élites visuels, sons, shaders | 🔲 À faire |
+| 8 Contenu | Minage par arme (V5), 6 vaisseaux, 60 évolutions, 240 nœuds permanents, modules | ✅ Terminé |
+| 9 Polish | Équilibrage, événements planétaires, élites visuels, sons, shaders | 🔄 En cours |
 | 10 Steam | Page boutique, trailer, captures, succès, builds distribution | 🔲 À faire |
 
 ---

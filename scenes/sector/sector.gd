@@ -174,10 +174,10 @@ func _process(delta: float) -> void:
 func _threat_mult() -> float:
 	match RunState.difficulty:
 		1: return 0.5
-		2: return 1.0
-		3: return 1.5
-		4: return 2.0
-		_: return 2.5
+		2: return 0.9
+		3: return 1.3
+		4: return 1.7
+		_: return 2.2
 
 
 # --- Extraction volontaire ----------------------------------------
@@ -385,12 +385,12 @@ func _spawn_wave() -> void:
 		"tank":   {"weight": 0.6 if lvl >= 2 else 0.0},
 		"sniper": {"weight": 0.8 if lvl >= 2 else 0.1},
 	}
-	for _i in 1 + lvl / 2:
+	for _i in 2 + lvl / 2:
 		var kind := _pick_weighted(weights)
 		if kind == "mite":
 			var origin := _edge_point()
-			for _j in 3:
-				spawn_enemy("mite", origin + Vector2(randf_range(-30, 30), randf_range(-30, 30)))
+			for _j in 5:
+				spawn_enemy("mite", origin + Vector2(randf_range(-40, 40), randf_range(-40, 40)))
 		else:
 			spawn_enemy(kind)
 	# Gardien à partir de menace niveau 8

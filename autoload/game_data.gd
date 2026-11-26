@@ -24,14 +24,14 @@ const CONFIG := {
 	"ship_accel":      1250.0,
 	"dash_speed":      820.0,
 	"dash_cooldown":   1.2,
-	"threat_rate":     0.5,    # points de menace / seconde
-	"spawn_base":      3.5,    # secondes entre vagues au départ
-	"rocks":           22,     # roches présentes en même temps
+	"threat_rate":     0.4,    # points de menace / seconde
+	"spawn_base":      2.5,    # secondes entre vagues au départ
+	"rocks":           45,     # roches présentes en même temps
 	"extract_time":    10.0,   # secondes à l'arrêt pour extraire
 	"magnet_radius":   55.0,
 	"discover_radius": 220.0,  # rayon de révélation du brouillard
 	"recycle_dist":    2500.0, # distance hors-écran pour recycler un ennemi
-	"enemy_cap":       60,     # nombre max d'ennemis simultanés
+	"enemy_cap":       80,     # nombre max d'ennemis simultanés
 }
 
 const RESOURCES := {
@@ -163,7 +163,7 @@ const ENEMIES := {
 	"tank":     {"hp": 20.0, "speed": 55.0,  "damage": 18.0, "radius": 36.0, "xp": 8},
 	"sniper":   {"hp": 4.0,  "speed": 80.0,  "damage": 12.0, "radius": 20.0, "xp": 5, "range": 420.0, "shot_cooldown": 2.5},
 	"guardian": {"hp": 30.0, "speed": 450.0, "damage": 25.0, "radius": 55.0, "xp": 15},
-	"boss":     {"hp": 300.0, "speed": 40.0,  "damage": 50.0, "radius": 70.0, "xp": 50},
+	"boss":     {"hp": 300.0, "speed": 40.0,  "damage": 30.0, "radius": 70.0, "xp": 50},
 }
 
 const WEAPONS := {
@@ -173,7 +173,7 @@ const WEAPONS := {
 				 "range": 340.0, "heat_rate": 0.85, "cool_rate": 1.3,
 				 "mining_damage": 6.0},
 	"launcher": {"name": "Roquettes",     "cooldown": 1.6,  "damage": 8.0,  "speed": 190.0, "life": 3.5,
-				 "explosion_radius": 55.0, "explosion_damage": 5.0,
+				 "explosion_radius": 55.0, "explosion_damage": 10.0,
 				 "mining_damage": 5.0},
 	"flame":    {"name": "Lance-flammes", "cooldown": 0.0,  "damage": 25.0, "speed": 0.0,   "life": 0.0,
 				 "range": 160.0, "angle": 50.0, "fuel_rate": 0.65, "cool_rate": 0.9,
