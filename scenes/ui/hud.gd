@@ -19,6 +19,7 @@ var _extract_bar:    ProgressBar
 var _extract_label:  Label
 var _announce:       Label
 var _announce_time   := 0.0
+var _debug_label:    Label
 var _panel:          PanelContainer
 var _panel_title:    Label
 var _panel_body:     Label
@@ -98,6 +99,18 @@ func _ready() -> void:
 	_mission_label.offset_right  = 400
 	root.add_child(_mission_label)
 
+	# --- Overlay debug FPS (bas-droite) ---
+	_debug_label = Label.new()
+	_style_label(_debug_label, 12, MUTED)
+	_debug_label.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_debug_label.offset_top    = -24
+	_debug_label.offset_bottom = -4
+	_debug_label.offset_left   = -200
+	_debug_label.offset_right  = -8
+	_debug_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_debug_label.visible = OS.is_debug_build()
+	root.add_child(_debug_label)
+
 	# --- Panneau central ---
 	_panel = PanelContainer.new()
 	_panel.add_theme_stylebox_override("panel", _box(PANEL, 20))
@@ -170,6 +183,10 @@ func _process(delta: float) -> void:
 	# Annonce
 	_announce_time -= delta
 	_announce.modulate.a = clampf(_announce_time * 2.0, 0.0, 1.0)
+
+	# Overlay debug
+	if _debug_label.visible:
+		_debug_label.text = "%d FPS · %d nœuds" % [Engine.get_frames_per_second(), get_tree().get_node_count()]
 
 
 func announce(text: String) -> void:

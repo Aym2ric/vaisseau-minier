@@ -22,6 +22,7 @@ var _weapon_buttons: Array   = []
 var _param_buttons: Dictionary = {}
 var _tree_tab       := "navigation"
 var _summary_label: Label
+var _stats_label: Label
 var _inventory_label: Label
 var _pinned_label: Label
 var _tree_content: VBoxContainer
@@ -201,6 +202,14 @@ func _build_summary_section(parent: Node) -> void:
 	_style_label(_summary_label, 13, INK)
 	_summary_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	content.add_child(_summary_label)
+	var arc_lbl := Label.new()
+	_style_label(arc_lbl, 12, ACCENT)
+	arc_lbl.text = "STATISTIQUES GLOBALES"
+	content.add_child(arc_lbl)
+	_stats_label = Label.new()
+	_style_label(_stats_label, 12, MUTED)
+	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	content.add_child(_stats_label)
 
 
 func _build_inventory_section(parent: Node) -> void:
@@ -317,6 +326,17 @@ func _refresh() -> void:
 			if int(kept[rid]) > 0 and GameData.RESOURCES.has(rid):
 				lines.append("  +%d %s" % [int(kept[rid]), GameData.RESOURCES[rid]["name"]])
 		_summary_label.text = "\n".join(lines)
+
+	# Statistiques globales
+	var gs: Dictionary = SaveGame.data.get("stats", {})
+	var total_runs := int(gs.get("runs", 0))
+	if total_runs == 0:
+		_stats_label.text = "Aucune expédition terminée."
+	else:
+		var total_mins := int(gs.get("seconds", 0)) / 60
+		_stats_label.text = "%d expéditions — %d kills — %d min — %d ressources récupérées" % [
+			total_runs, int(gs.get("kills", 0)), total_mins, int(gs.get("resources", 0))
+		]
 
 	# Inventaire
 	var inventory: Dictionary = SaveGame.data["inventory"]

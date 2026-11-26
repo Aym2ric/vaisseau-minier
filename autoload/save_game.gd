@@ -26,6 +26,7 @@ func default_data() -> Dictionary:
 		"run_save": null,             # snapshot d'une run en cours (Sauvegarder et quitter)
 		"options": {"control_mode": "free", "auto_fire": false},
 		"history": [],
+		"stats": {"runs": 0, "kills": 0, "seconds": 0, "resources": 0},
 	}
 
 

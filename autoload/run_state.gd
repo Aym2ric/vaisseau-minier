@@ -242,7 +242,10 @@ func restore(data: Dictionary) -> void:
 
 
 ## Termine la run, verse le cargo dans l'inventaire, retourne un résumé.
+## Idempotent : si la run est déjà terminée, retourne un dict vide.
 func end_run(success: bool) -> Dictionary:
+	if not active:
+		return {}
 	active = false
 	var keep := 1.0
 	if not success:
@@ -272,6 +275,16 @@ func end_run(success: bool) -> Dictionary:
 	history.push_front(summary)
 	if history.size() > 20:
 		history.resize(20)
+	# Statistiques cumulées
+	var stats: Dictionary = SaveGame.data.get("stats", {})
+	stats["runs"]      = int(stats.get("runs",      0)) + 1
+	stats["kills"]     = int(stats.get("kills",     0)) + int(summary["kills"])
+	stats["seconds"]   = int(stats.get("seconds",   0)) + int(summary["seconds"])
+	var res_total := 0
+	for rid in kept:
+		res_total += int(kept[rid])
+	stats["resources"] = int(stats.get("resources", 0)) + res_total
+	SaveGame.data["stats"] = stats
 	# Déblocage de la difficulté suivante sur extraction réussie
 	if success and difficulty < 5:
 		var diffs: Dictionary = SaveGame.data.get("difficulties", {})

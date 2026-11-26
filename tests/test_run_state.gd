@@ -27,6 +27,7 @@ func _reset() -> void:
 	SaveGame.data["skills"]       = {}
 	SaveGame.data["difficulties"] = {"roc": 1}
 	SaveGame.data["pinned"]       = []
+	SaveGame.data["stats"]        = {"runs": 0, "kills": 0, "seconds": 0, "resources": 0}
 
 
 # --- Démarrage de run ---
@@ -468,3 +469,64 @@ func test_start_run_resets_evolution() -> bool:
 	RunState.weapon_upgrades = 5
 	RunState.start_run("roc", 1)
 	return RunState.run_evolution == "" and RunState.weapon_upgrades == 0
+
+
+# --- Statistiques cumulées ---
+
+func test_end_run_increments_runs_stat() -> bool:
+	_reset()
+	RunState.active = true
+	SaveGame.data["inventory"] = {}
+	RunState.end_run(true)
+	return int(SaveGame.data["stats"].get("runs", 0)) == 1
+
+
+func test_end_run_accumulates_kills_stat() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.mission_progress = 7
+	SaveGame.data["inventory"] = {}
+	RunState.end_run(true)
+	return int(SaveGame.data["stats"].get("kills", 0)) == 7
+
+
+func test_end_run_accumulates_resources_stat() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.cargo = {"fer": 10, "cristal": 5}
+	SaveGame.data["inventory"] = {}
+	RunState.end_run(true)
+	return int(SaveGame.data["stats"].get("resources", 0)) == 15
+
+
+func test_end_run_inactive_returns_empty() -> bool:
+	_reset()
+	RunState.active = false
+	var summary := RunState.end_run(true)
+	return summary.is_empty()
+
+
+func test_end_run_twice_does_not_duplicate_resources() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.cargo = {"fer": 10}
+	SaveGame.data["inventory"] = {}
+	RunState.end_run(true)
+	# Deuxième appel : active est déjà false, ne doit rien faire
+	RunState.cargo = {"fer": 10}
+	RunState.end_run(true)
+	return int(SaveGame.data["inventory"].get("fer", 0)) == 10
+
+
+func test_end_run_stats_accumulate_across_runs() -> bool:
+	_reset()
+	RunState.active = true
+	RunState.cargo = {"fer": 3}
+	SaveGame.data["inventory"] = {}
+	RunState.end_run(true)
+	RunState.active = true
+	RunState.cargo = {"fer": 2}
+	SaveGame.data["inventory"] = {}
+	RunState.end_run(false)
+	return int(SaveGame.data["stats"].get("runs", 0)) == 2 \
+		and int(SaveGame.data["stats"].get("resources", 0)) >= 2

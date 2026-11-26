@@ -102,3 +102,23 @@ func test_all_default_keys_present_in_live_data() -> bool:
 			push_error("SaveGame.data manque la cle : %s" % key)
 			return false
 	return true
+
+
+func test_default_data_has_stats() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("stats") and d["stats"] is Dictionary
+
+
+func test_default_data_stats_has_required_keys() -> bool:
+	var d := SaveGame.default_data()
+	for key in ["runs", "kills", "seconds", "resources"]:
+		if not d["stats"].has(key):
+			push_error("stats manque la cle : %s" % key)
+			return false
+	return true
+
+
+func test_default_data_stats_start_at_zero() -> bool:
+	var d := SaveGame.default_data()
+	var s: Dictionary = d["stats"]
+	return int(s["runs"]) == 0 and int(s["kills"]) == 0 and int(s["seconds"]) == 0 and int(s["resources"]) == 0
