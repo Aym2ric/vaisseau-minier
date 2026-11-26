@@ -12,6 +12,7 @@ const _ENEMY_SCENES  = {
 	"tank":     preload("res://scenes/enemies/tank.tscn"),
 	"sniper":   preload("res://scenes/enemies/sniper.tscn"),
 	"guardian": preload("res://scenes/enemies/guardian.tscn"),
+	"boss":     preload("res://scenes/enemies/boss.tscn"),
 }
 
 signal cleared
@@ -87,7 +88,7 @@ func _ready() -> void:
 
 	_next_event_time = randf_range(60.0, 100.0)
 	announced.emit("Mission : éliminer %d ennemis" % RunState.mission_target)
-	announced.emit("Appuie sur TAB pour extraire après la mission")
+	announced.emit("Mission : TAB pour extraire une fois accomplie")
 
 
 func _layer(layer_name: String) -> Node2D:
@@ -171,16 +172,13 @@ func _update_extraction(delta: float) -> void:
 	if not RunState.mission_complete:
 		RunState.extract_progress = 0.0
 		return
-	if Input.is_action_just_pressed("extract") and ship.is_stopped() and not _extracting:
+	if Input.is_action_just_pressed("extract") and not _extracting:
 		_extracting = true
 		_extract_timer = 0.0
-		announced.emit("Extraction en cours… reste immobile !")
+		announced.emit("Extraction en cours… (TAB pour annuler)")
 	if _extracting:
-		if not ship.is_stopped() or Input.is_action_just_pressed("dash"):
-			_extracting = false
-			_extract_timer = 0.0
-			RunState.extract_progress = 0.0
-			announced.emit("Extraction annulée !")
+		if Input.is_action_just_pressed("extract") or Input.is_action_just_pressed("dash"):
+			_cancel_extraction("Extraction annulée.")
 			return
 		_extract_timer += delta
 		var extract_time := float(GameData.CONFIG["extract_time"]) * maxf(0.3, 1.0 - 0.15 * SaveGame.skill("extract_boost"))
@@ -191,6 +189,13 @@ func _update_extraction(delta: float) -> void:
 			cleared.emit()
 	else:
 		RunState.extract_progress = 0.0
+
+
+func _cancel_extraction(message: String) -> void:
+	_extracting = false
+	_extract_timer = 0.0
+	RunState.extract_progress = 0.0
+	announced.emit(message)
 
 
 # --- Roches et butin -----------------------------------------------
@@ -322,8 +327,10 @@ func spawn_enemy(kind: String, at: Variant = null) -> void:
 		return
 	var enemy: Enemy = _ENEMY_SCENES[kind].instantiate()
 	enemy.setup(RunState.difficulty)
-	if kind != "guardian" and RunState.threat_level() >= 2 and randf() < 0.15:
+	if kind != "guardian" and kind != "boss" and RunState.threat_level() >= 2 and randf() < 0.15:
 		enemy.apply_elite(_random_elite())
+	if kind == "boss":
+		(enemy as Boss).noyau_id = String(planet.get("boss_noyau", "noyau"))
 	enemy.position = at if at != null else _edge_point()
 	enemy.target   = ship
 	enemy.shots    = projectiles
@@ -340,7 +347,7 @@ func _recycle_enemies() -> void:
 	var recycle_dist := float(GameData.CONFIG["recycle_dist"])
 	for enemy in enemies.get_children():
 		var e := enemy as Enemy
-		if e == null or e.kind == "guardian":
+		if e == null or e.kind == "guardian" or e.kind == "boss":
 			continue
 		if e.position.distance_to(ship.position) > recycle_dist:
 			e.position = _edge_point()
@@ -372,9 +379,16 @@ func _spawn_wave() -> void:
 				spawn_enemy("mite", origin + Vector2(randf_range(-30, 30), randf_range(-30, 30)))
 		else:
 			spawn_enemy(kind)
-	# Boss à partir de menace niveau 8
+	# Gardien à partir de menace niveau 8
 	if lvl >= 8 and randf() < 0.08:
 		spawn_enemy("guardian")
+	# Boss planétaire à partir de menace niveau 10 (1 seul à la fois)
+	if lvl >= 10 and randf() < 0.04:
+		var has_boss := enemies.get_children().any(func(e: Node) -> bool:
+			var en := e as Enemy
+			return en != null and en.kind == "boss")
+		if not has_boss:
+			spawn_enemy("boss")
 
 
 func _spawn_event() -> void:
@@ -410,6 +424,14 @@ func _elite_explosion(at: Vector2, radius: float, damage: float) -> void:
 
 func _on_enemy_died(enemy: Enemy) -> void:
 	Burst.spawn(effects, enemy.position, Color("ff5a5f"), 30.0, 6)
+	# Boss : drop noyau planétaire + XP spécial
+	if enemy.kind == "boss":
+		Burst.spawn(effects, enemy.position, Color("ff9900"), 90.0, 24)
+		_drop(enemy.position, (enemy as Boss).noyau_id, 1, true)
+		RunState.add_xp(enemy.xp)
+		RunState.add_kill()
+		announced.emit("Boss vaincu !")
+		return
 	# Effets élite on-death
 	match enemy.elite_modifier:
 		"explosif":
@@ -435,6 +457,8 @@ func _on_enemy_died(enemy: Enemy) -> void:
 func _on_ship_damaged() -> void:
 	shake = 0.4
 	FloatText.spawn(effects, ship.position + Vector2(0, -28), "touché", Color("ff5a5f"))
+	if _extracting:
+		_cancel_extraction("Extraction interrompue par les dégâts !")
 
 
 # --- Dessin du sol + effets -----------------------------------------
@@ -447,7 +471,8 @@ func _draw() -> void:
 
 	# Anneau d'extraction
 	if _extracting:
-		var ratio := _extract_timer / float(GameData.CONFIG["extract_time"])
+		var extract_time_draw := float(GameData.CONFIG["extract_time"]) * maxf(0.3, 1.0 - 0.15 * SaveGame.skill("extract_boost"))
+		var ratio := _extract_timer / extract_time_draw
 		var col   := Color("8fd35f")
 		draw_arc(ship.global_position, 28.0, -PI / 2.0, -PI / 2.0 + TAU * ratio, 48, col, 5.0)
 		draw_circle(ship.global_position, 24.0, Color(col, 0.12))

@@ -69,30 +69,68 @@ const RESOURCES := {
 	"givre":      {"name": "Givre dense",  "color": Color(0.780, 0.900, 1.000), "base": 50,  "rare": true,  "weight": 3},
 	"xenon":      {"name": "Xénon pur",    "color": Color(0.820, 0.700, 1.000), "base": 60,  "rare": true,  "weight": 3},
 	"cendrite":   {"name": "Cendrite",     "color": Color(0.550, 0.380, 0.300), "base": 70,  "rare": true,  "weight": 3},
-	# Boss
-	"noyau":      {"name": "Noyau de gardien", "color": Color(1.0, 0.820, 0.400), "base": 300, "rare": true, "weight": 5},
+	# Boss — noyau générique (gardien)
+	"noyau":          {"name": "Noyau de gardien",    "color": Color(1.0, 0.820, 0.400), "base": 300, "rare": true, "weight": 5},
+	# Boss noyaux planétaires (1 par planète)
+	"noyau_roc":      {"name": "Noyau : Colosse",     "color": Color(0.900, 0.700, 0.200), "base": 400, "rare": true, "weight": 5},
+	"noyau_glace":    {"name": "Noyau : Titan gelé",  "color": Color(0.400, 0.800, 1.000), "base": 400, "rare": true, "weight": 5},
+	"noyau_gaz":      {"name": "Noyau : Léviathan",   "color": Color(0.700, 0.500, 1.000), "base": 400, "rare": true, "weight": 5},
+	"noyau_volcan":   {"name": "Noyau : Cœur ardent", "color": Color(1.000, 0.200, 0.000), "base": 400, "rare": true, "weight": 5},
+	"noyau_desert":   {"name": "Noyau : Mirage",      "color": Color(1.000, 0.800, 0.100), "base": 400, "rare": true, "weight": 5},
+	"noyau_cristal":  {"name": "Noyau : Prisme",      "color": Color(0.700, 1.000, 0.900), "base": 400, "rare": true, "weight": 5},
+	"noyau_organique":{"name": "Noyau : Matriarche",  "color": Color(0.300, 0.800, 0.200), "base": 400, "rare": true, "weight": 5},
+	"noyau_radio":    {"name": "Noyau : Réacteur",    "color": Color(0.500, 1.000, 0.100), "base": 400, "rare": true, "weight": 5},
+	# Nouvelles exclusives planétaires
+	"solarium":       {"name": "Solarium",             "color": Color(1.000, 0.820, 0.100), "base": 55,  "rare": true,  "weight": 3},
+	"sable_vitrif":   {"name": "Sable vitrifié",       "color": Color(0.900, 0.860, 0.600), "base": 45,  "rare": true,  "weight": 3},
+	"prismalite":     {"name": "Prismalite",           "color": Color(0.700, 0.950, 0.800), "base": 65,  "rare": true,  "weight": 3},
+	"quartz_viv":     {"name": "Quartz vivant",        "color": Color(0.550, 1.000, 0.700), "base": 50,  "rare": true,  "weight": 3},
+	"biomasse":       {"name": "Biomasse fossilisée",  "color": Color(0.350, 0.650, 0.200), "base": 40,  "rare": false, "weight": 1},
+	"sporite":        {"name": "Sporite",              "color": Color(0.650, 0.300, 0.800), "base": 60,  "rare": true,  "weight": 3},
+	"radionite":      {"name": "Radionite",            "color": Color(0.550, 0.950, 0.100), "base": 70,  "rare": true,  "weight": 3},
+	"isotope":        {"name": "Isotope noir",         "color": Color(0.200, 0.600, 0.100), "base": 75,  "rare": true,  "weight": 3},
 }
 
 const PLANETS := {
 	"roc": {
 		"name": "Rocheuse", "res": "fer", "rare": "basaltite", "special": "",
 		"bg": Color(0.227, 0.165, 0.122), "spot": Color(0.200, 0.145, 0.106), "rock": Color(0.627, 0.478, 0.369),
-		"friction": 6.0, "wind": 0.0, "exclusive": ["basaltite", "ferrite"],
+		"friction": 6.0, "wind": 0.0, "exclusive": ["basaltite", "ferrite"], "boss_noyau": "noyau_roc",
 	},
 	"glace": {
 		"name": "Glacée", "res": "cristal", "rare": "givre", "special": "ice",
 		"bg": Color(0.122, 0.196, 0.259), "spot": Color(0.102, 0.169, 0.224), "rock": Color(0.498, 0.592, 0.671),
-		"friction": 1.4, "wind": 0.0, "exclusive": ["cryonite", "givre"],
+		"friction": 1.4, "wind": 0.0, "exclusive": ["cryonite", "givre"], "boss_noyau": "noyau_glace",
 	},
 	"gaz": {
 		"name": "Gazeuse", "res": "helium", "rare": "xenon", "special": "gas",
 		"bg": Color(0.173, 0.122, 0.239), "spot": Color(0.149, 0.102, 0.208), "rock": Color(0.541, 0.478, 0.639),
-		"friction": 4.0, "wind": 260.0, "exclusive": ["plasma", "xenon"],
+		"friction": 4.0, "wind": 260.0, "exclusive": ["plasma", "xenon"], "boss_noyau": "noyau_gaz",
 	},
 	"volcan": {
 		"name": "Volcanique", "res": "magma", "rare": "cendrite", "special": "magma",
 		"bg": Color(0.227, 0.102, 0.071), "spot": Color(0.192, 0.082, 0.055), "rock": Color(0.420, 0.290, 0.251),
-		"friction": 6.0, "wind": 0.0, "exclusive": ["obsidienne", "cendrite"],
+		"friction": 6.0, "wind": 0.0, "exclusive": ["obsidienne", "cendrite"], "boss_noyau": "noyau_volcan",
+	},
+	"desert": {
+		"name": "Désertique", "res": "carbone", "rare": "solarium", "special": "heat",
+		"bg": Color(0.235, 0.188, 0.082), "spot": Color(0.200, 0.157, 0.063), "rock": Color(0.671, 0.588, 0.329),
+		"friction": 5.0, "wind": 200.0, "exclusive": ["solarium", "sable_vitrif"], "boss_noyau": "noyau_desert",
+	},
+	"cristalline": {
+		"name": "Cristalline", "res": "cristal", "rare": "prismalite", "special": "crystal",
+		"bg": Color(0.071, 0.165, 0.200), "spot": Color(0.055, 0.137, 0.173), "rock": Color(0.400, 0.639, 0.698),
+		"friction": 7.0, "wind": 0.0, "exclusive": ["prismalite", "quartz_viv"], "boss_noyau": "noyau_cristal",
+	},
+	"organique": {
+		"name": "Organique", "res": "biomasse", "rare": "sporite", "special": "bio",
+		"bg": Color(0.071, 0.157, 0.059), "spot": Color(0.055, 0.129, 0.047), "rock": Color(0.302, 0.502, 0.247),
+		"friction": 3.0, "wind": 0.0, "exclusive": ["biomasse", "sporite"], "boss_noyau": "noyau_organique",
+	},
+	"radioactive": {
+		"name": "Radioactive", "res": "uranium", "rare": "radionite", "special": "rad",
+		"bg": Color(0.067, 0.157, 0.059), "spot": Color(0.051, 0.129, 0.043), "rock": Color(0.286, 0.522, 0.212),
+		"friction": 5.0, "wind": 0.0, "exclusive": ["radionite", "isotope"], "boss_noyau": "noyau_radio",
 	},
 }
 
@@ -125,6 +163,7 @@ const ENEMIES := {
 	"tank":     {"hp": 20.0, "speed": 55.0,  "damage": 18.0, "radius": 36.0, "xp": 8},
 	"sniper":   {"hp": 4.0,  "speed": 80.0,  "damage": 12.0, "radius": 20.0, "xp": 5, "range": 420.0, "shot_cooldown": 2.5},
 	"guardian": {"hp": 30.0, "speed": 450.0, "damage": 25.0, "radius": 55.0, "xp": 15},
+	"boss":     {"hp": 300.0, "speed": 40.0,  "damage": 50.0, "radius": 70.0, "xp": 50},
 }
 
 const WEAPONS := {
@@ -183,6 +222,10 @@ const SKILLS := {
 	"nav_glace":     {"name": "Cap Glaciaire",         "desc": "Débloque la planète Glacée.",         "cost": 25, "cost_res": "fer",       "max": 1, "tab": "navigation", "prereqs": ["thrust"], "unlocks_planet": "glace"},
 	"nav_volcan":    {"name": "Cap Volcanique",        "desc": "Débloque la planète Volcanique.",     "cost": 20, "cost_res": "titane",    "max": 1, "tab": "navigation", "prereqs": ["nav_glace"], "unlocks_planet": "volcan"},
 	"nav_gaz":       {"name": "Cap Gazeux",            "desc": "Débloque la planète Gazeuse.",        "cost": 20, "cost_res": "cryonite",  "max": 1, "tab": "navigation", "prereqs": ["nav_glace"], "unlocks_planet": "gaz"},
+	"nav_desert":    {"name": "Cap Désertique",        "desc": "Débloque la planète Désertique.",     "cost": 25, "cost_res": "fer",       "max": 1, "tab": "navigation", "prereqs": ["thrust"], "unlocks_planet": "desert"},
+	"nav_cristal":   {"name": "Cap Cristallin",        "desc": "Débloque la planète Cristalline.",    "cost": 30, "cost_res": "tungstene", "max": 1, "tab": "navigation", "prereqs": ["nav_desert"], "unlocks_planet": "cristalline"},
+	"nav_organique": {"name": "Cap Organique",         "desc": "Débloque la planète Organique.",      "cost": 25, "cost_res": "cryonite",  "max": 1, "tab": "navigation", "prereqs": ["nav_glace"], "unlocks_planet": "organique"},
+	"nav_radio":     {"name": "Cap Radioactif",        "desc": "Débloque la planète Radioactive.",    "cost": 35, "cost_res": "uranium",   "max": 1, "tab": "navigation", "prereqs": ["nav_organique"], "unlocks_planet": "radioactive"},
 	# Arbre Logistique
 	"hull":          {"name": "Blindage",             "desc": "+15 PV max.",                       "cost": 15, "cost_res": "fer",       "max": 5, "tab": "logistique", "prereqs": []},
 	"magnet":        {"name": "Aimant",               "desc": "+30 % de portée.",                  "cost": 8,  "cost_res": "fer",       "max": 5, "tab": "logistique", "prereqs": []},

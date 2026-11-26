@@ -12,7 +12,7 @@ const REQUIRED_CONFIG := [
 	"rocks", "extract_time", "magnet_radius",
 	"discover_radius", "recycle_dist", "enemy_cap",
 ]
-const REQUIRED_PLANET   := ["name", "res", "rare", "bg", "spot", "rock", "friction", "wind"]
+const REQUIRED_PLANET   := ["name", "res", "rare", "bg", "spot", "rock", "friction", "wind", "boss_noyau"]
 const REQUIRED_RESOURCE := ["name", "color", "base", "rare", "weight"]
 const REQUIRED_ENEMY    := ["hp", "speed", "damage", "radius", "xp"]
 const REQUIRED_ROCK     := ["hp", "radius", "weight", "xp", "mineable"]
@@ -152,6 +152,30 @@ func test_skill_prereqs_reference_valid_skills() -> bool:
 			if not GameData.SKILLS.has(prereq_id):
 				push_error("SKILLS[%s].prereqs référence skill inconnu : %s" % [id, prereq_id])
 				return false
+	return true
+
+
+func test_planet_boss_noyaux_are_valid_resource_ids() -> bool:
+	for id in GameData.PLANETS:
+		var planet: Dictionary = GameData.PLANETS[id]
+		var noyau_id: String = String(planet.get("boss_noyau", ""))
+		if noyau_id == "":
+			push_error("PLANETS[%s] manque le champ boss_noyau" % id)
+			return false
+		if not GameData.RESOURCES.has(noyau_id):
+			push_error("PLANETS[%s].boss_noyau='%s' absent de RESOURCES" % [id, noyau_id])
+			return false
+	return true
+
+
+func test_boss_enemy_has_required_fields() -> bool:
+	if not GameData.ENEMIES.has("boss"):
+		push_error("ENEMIES manque le type 'boss'")
+		return false
+	for field in REQUIRED_ENEMY:
+		if not GameData.ENEMIES["boss"].has(field):
+			push_error("ENEMIES['boss'] manque le champ : %s" % field)
+			return false
 	return true
 
 

@@ -74,7 +74,7 @@ Une mission réussie autorise l'extraction, mais ne termine pas la run. Le joueu
 
 ### Extraction
 
-Le joueur déclenche volontairement l'extraction depuis n'importe quel emplacement après réussite de la mission. Il doit rester immobile pendant X secondes (10 secondes proposées). Un déplacement ou dash annule le processus ; une nouvelle tentative repart de zéro. Tirer, miner et subir des dégâts n'interrompent pas le processus selon les règles proposées. La mort met fin à l'expédition. Une extraction réussie sécurise le butin ramassé. La durée pourrait être réduite via Navigation.
+Le joueur déclenche volontairement l'extraction depuis n'importe quel emplacement après réussite de la mission, en appuyant sur TAB. Il n'est pas nécessaire d'être immobile. L'extraction dure X secondes (10 secondes proposées). Elle est annulée si le joueur subit des dégâts, appuie à nouveau sur TAB ou déclenche un dash ; une nouvelle tentative repart de zéro. Tirer et miner n'interrompent pas le processus. La mort met fin à l'expédition. Une extraction réussie sécurise le butin ramassé. La durée peut être réduite via Navigation.
 
 ### Échec
 
