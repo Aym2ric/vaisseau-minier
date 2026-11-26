@@ -52,13 +52,19 @@ func _apply_damage(delta: float, stats: Dictionary) -> void:
 	var base_dmg := float(stats["damage"])
 	var dmg_evo := 1.75 if evo == "flame_furnace" else 1.0
 	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("flame_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
 
 	for result in space.intersect_shape(q, 16):
 		var col: Node2D = result["collider"]
 		if is_instance_valid(col) and col.has_method("take_hit"):
 			var to_col := col.global_position - origin
 			if absf(dir.angle_to(to_col.normalized())) <= half_angle:
-				col.take_hit(base_dmg * dmg_mult * delta)
+				var hit_dmg: float
+				if col is Rock and (col as Rock).kind not in ["rock", "hard"]:
+					hit_dmg = float(stats["mining_damage"]) * mine_mult * delta
+				else:
+					hit_dmg = base_dmg * dmg_mult * delta
+				col.take_hit(hit_dmg)
 
 
 func _draw() -> void:

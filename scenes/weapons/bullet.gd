@@ -1,11 +1,12 @@
 class_name Bullet
 extends Area2D
-## Projectile du joueur : touche les ennemis, bloqué par les roches et les murs sans les endommager.
+## Projectile du joueur : combat_damage sur ennemis et murs friables, mining_damage sur gisements.
 
-var velocity := Vector2.ZERO
-var damage := 1.0
-var life := 0.75
-var _spent := false
+var velocity       := Vector2.ZERO
+var damage         := 1.0
+var mining_damage  := 0.6
+var life           := 0.75
+var _spent         := false
 
 
 func _ready() -> void:
@@ -27,13 +28,14 @@ func _on_hit(target: Node) -> void:
 	if _spent:
 		return
 	_spent = true
-	var can_damage := true
+	var hit_dmg := damage
 	if target is Rock:
-		# Murs friables (rock, hard) : endommageables par les armes
-		# Gisements (ore, gold, chest, repair) : minage uniquement
-		can_damage = (target as Rock).kind in ["rock", "hard"]
-	if can_damage and target.has_method("take_hit"):
-		target.call("take_hit", damage)
+		# Murs friables (rock, hard) → dégâts de combat
+		# Gisements (ore, gold, chest, repair) → dégâts de minage
+		if (target as Rock).kind not in ["rock", "hard"]:
+			hit_dmg = mining_damage
+	if target.has_method("take_hit"):
+		target.call("take_hit", hit_dmg)
 	queue_free()
 
 

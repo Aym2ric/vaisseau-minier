@@ -122,7 +122,7 @@ func _nearest_target() -> Vector2:
 	circle.radius = 2200.0
 	q.shape = circle
 	q.transform = Transform2D(0.0, global_position)
-	q.collision_mask = GameData.LAYER_ENEMIES
+	q.collision_mask = GameData.LAYER_ENEMIES | GameData.LAYER_ROCKS
 	q.collide_with_areas  = true
 	q.collide_with_bodies = true
 	var nearest      := Vector2.ZERO

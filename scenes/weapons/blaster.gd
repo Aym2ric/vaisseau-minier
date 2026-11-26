@@ -22,11 +22,14 @@ func update_weapon(delta: float, firing: bool) -> void:
 		"blaster_heavy":   dmg_evo = 2.0
 		"blaster_gatling": dmg_evo = 0.7
 	var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("blaster_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
+	var mining_dmg := float(stats["mining_damage"]) * mine_mult
 	for i in count:
 		var angle := ship.rotation + (i - (count - 1) / 2.0) * 0.12
 		var bullet: Bullet = BULLET_SCENE.instantiate()
 		bullet.position = muzzle()
 		bullet.velocity = Vector2.RIGHT.rotated(angle) * float(stats["speed"]) + ship.velocity * 0.3
-		bullet.damage = damage
+		bullet.damage        = damage
+		bullet.mining_damage = mining_dmg
 		bullet.life = float(stats["life"])
 		ship.projectiles.add_child(bullet)

@@ -17,7 +17,6 @@ func _reset() -> void:
 	RunState.mission_progress = 0
 	RunState.mission_complete = false
 	RunState.extract_progress = 0.0
-	RunState.is_mining       = false
 	RunState.weapon_upgrades = 0
 	RunState.run_evolution   = ""
 	RunState.xp              = 0
@@ -385,6 +384,52 @@ func test_apply_evolution_sets_run_evolution() -> bool:
 	_reset()
 	RunState.apply_evolution("blaster_gatling")
 	return RunState.run_evolution == "blaster_gatling"
+
+
+func test_serialize_contains_key_fields() -> bool:
+	_reset()
+	RunState.start_run("roc", 2)
+	RunState.cargo = {"fer": 5}
+	RunState.hull  = 42.0
+	var s := RunState.serialize()
+	for key in ["planet_id", "difficulty", "hull", "max_hull", "cargo",
+				"threat", "elapsed_time", "mission_type", "mission_target",
+				"mission_progress", "mission_complete", "xp", "level",
+				"xp_to_next", "run_upgrades", "rerolls", "weapon_upgrades", "run_evolution"]:
+		if not s.has(key):
+			push_error("serialize() manque la clé : %s" % key)
+			return false
+	return true
+
+
+func test_restore_roundtrip() -> bool:
+	_reset()
+	RunState.start_run("roc", 3)
+	RunState.hull  = 35.0
+	RunState.cargo = {"cristal": 10}
+	RunState.threat = 42.0
+	RunState.level  = 2
+	var saved := RunState.serialize()
+	# Modifier l'état
+	RunState.hull   = 1.0
+	RunState.threat = 0.0
+	RunState.level  = 0
+	# Restaurer
+	RunState.restore(saved)
+	return is_equal_approx(RunState.hull, 35.0) \
+		and is_equal_approx(RunState.threat, 42.0) \
+		and RunState.level == 2 \
+		and int(RunState.cargo.get("cristal", 0)) == 10
+
+
+func test_end_run_clears_run_save() -> bool:
+	_reset()
+	RunState.active = true
+	SaveGame.data["inventory"]   = {}
+	SaveGame.data["run_save"]    = {"some": "data"}
+	SaveGame.data["difficulties"] = {"roc": 1}
+	RunState.end_run(true)
+	return SaveGame.data.get("run_save") == null
 
 
 func test_end_run_success_unlocks_next_difficulty() -> bool:

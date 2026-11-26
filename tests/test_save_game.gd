@@ -48,6 +48,27 @@ func test_default_data_no_credits() -> bool:
 	return not d.has("credits")
 
 
+func test_default_data_has_run_save_null() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("run_save") and d["run_save"] == null
+
+
+func test_has_run_save_false_by_default() -> bool:
+	var old: Variant = SaveGame.data.get("run_save")
+	SaveGame.data["run_save"] = null
+	var result := not SaveGame.has_run_save()
+	SaveGame.data["run_save"] = old
+	return result
+
+
+func test_save_run_sets_has_run_save() -> bool:
+	var old: Variant = SaveGame.data.get("run_save")
+	SaveGame.data["run_save"] = {"test": true}
+	var result := SaveGame.has_run_save()
+	SaveGame.data["run_save"] = old
+	return result
+
+
 func test_default_data_has_difficulties() -> bool:
 	var d := SaveGame.default_data()
 	return d.has("difficulties") and d["difficulties"] is Dictionary

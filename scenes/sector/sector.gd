@@ -23,14 +23,13 @@ var enemies: Node2D
 var projectiles: Node2D
 var effects: Node2D
 
+var restore_data: Dictionary = {}  # snapshot à restaurer (défini avant add_child)
+
 var spawn_timer  := 4.0
 var rock_timer   := 0.0
 var shake        := 0.0
 var _time        := 0.0
 var _decor: Array[Rect2] = []
-
-# Minage
-var _mine_target: Rock = null
 
 # Extraction
 var _extracting      := false
@@ -69,14 +68,20 @@ func _ready() -> void:
 
 	_build_walls()
 
-	for _i in int(round(float(GameData.CONFIG["rocks"]))):
-		spawn_rock()
-
 	for _i in 80:
 		_decor.append(Rect2(
 			randf() * GameData.MAP_SIZE.x, randf() * GameData.MAP_SIZE.y,
 			randf_range(20, 70), randf_range(10, 30)
 		))
+
+	if restore_data.is_empty():
+		for _i in int(round(float(GameData.CONFIG["rocks"]))):
+			spawn_rock()
+	else:
+		_restore_rocks(restore_data.get("rocks", []))
+		if restore_data.has("ship_pos"):
+			var sp: Array = restore_data["ship_pos"]
+			ship.position = Vector2(float(sp[0]), float(sp[1]))
 
 	_next_event_time = randf_range(60.0, 100.0)
 	announced.emit("Mission : éliminer %d ennemis" % RunState.mission_target)
@@ -139,13 +144,8 @@ func _physics_process(delta: float) -> void:
 		rock_timer = 2.0
 		spawn_rock()
 
-	# Minage automatique
-	_update_mining(delta)
-
 	# Extraction
 	_update_extraction(delta)
-
-	RunState.is_mining = is_instance_valid(_mine_target)
 
 
 func _process(delta: float) -> void:
@@ -161,43 +161,6 @@ func _threat_mult() -> float:
 		3: return 1.5
 		4: return 2.0
 		_: return 2.5
-
-
-# --- Minage automatique -------------------------------------------
-
-func _update_mining(delta: float) -> void:
-	if not ship.is_stopped():
-		_mine_target = null
-		return
-	if not is_instance_valid(_mine_target):
-		_mine_target = _find_nearest_ore()
-	if not is_instance_valid(_mine_target):
-		return
-	var mine_range := float(GameData.CONFIG["mine_range"]) * (1.0 + 0.2 * SaveGame.skill("mine_range"))
-	if ship.position.distance_to(_mine_target.position) > mine_range:
-		_mine_target = null
-		return
-	var power := float(GameData.CONFIG["mine_base_rate"]) \
-		* (1.0 + 0.2 * SaveGame.skill("mine_speed")) \
-		* (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
-	_mine_target.mine(power * delta)
-	if not is_instance_valid(_mine_target):
-		_mine_target = null
-
-
-func _find_nearest_ore() -> Rock:
-	var best: Rock = null
-	var best_dist := INF
-	var mine_range := float(GameData.CONFIG["mine_range"]) * (1.0 + 0.2 * SaveGame.skill("mine_range"))
-	for rock in rocks.get_children():
-		var r := rock as Rock
-		if r == null or not r.is_mineable():
-			continue
-		var d := ship.position.distance_to(r.position)
-		if d < mine_range and d < best_dist:
-			best_dist = d
-			best = r
-	return best
 
 
 # --- Extraction volontaire ----------------------------------------
@@ -228,6 +191,35 @@ func _update_extraction(delta: float) -> void:
 
 
 # --- Roches et butin -----------------------------------------------
+
+func get_snapshot() -> Dictionary:
+	var rock_list: Array = []
+	for child in rocks.get_children():
+		var r := child as Rock
+		if r == null:
+			continue
+		rock_list.append({
+			"kind":   r.kind,
+			"pos":    [r.position.x, r.position.y],
+			"hp":     r.hp,
+			"max_hp": r.max_hp,
+		})
+	return {
+		"rocks":    rock_list,
+		"ship_pos": [ship.position.x, ship.position.y],
+	}
+
+
+func _restore_rocks(rock_list: Array) -> void:
+	for entry in rock_list:
+		var rock: Rock = _ROCK_SCENE.instantiate()
+		rock.setup(String(entry["kind"]), RunState.difficulty)
+		rock.hp     = float(entry["hp"])
+		rock.max_hp = float(entry["max_hp"])
+		rock.position = Vector2(float(entry["pos"][0]), float(entry["pos"][1]))
+		rock.destroyed.connect(_on_rock_destroyed)
+		rocks.add_child(rock)
+
 
 func spawn_rock(kind: String = "", at: Variant = null) -> void:
 	if kind == "":
@@ -446,15 +438,6 @@ func _draw() -> void:
 	draw_rect(Rect2(Vector2(-20, -20), GameData.MAP_SIZE + Vector2(40, 40)), planet["bg"])
 	for d in _decor:
 		draw_colored_polygon(DrawUtils.ellipse_points(d.position, d.size.x, d.size.y, 16), planet["spot"])
-
-	# Faisceau de minage
-	if is_instance_valid(_mine_target):
-		var beam_color := Color("7ed4f5")
-		var from := ship.global_position
-		var to   := _mine_target.global_position
-		var t    := fmod(_time * 3.0, 1.0)
-		draw_line(from, to, Color(beam_color, 0.3 + 0.4 * sin(_time * 20.0)), 3.0)
-		draw_circle(to, 8.0 + 4.0 * sin(_time * 15.0), Color(beam_color, 0.6))
 
 	# Anneau d'extraction
 	if _extracting:

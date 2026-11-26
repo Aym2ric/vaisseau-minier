@@ -1,6 +1,6 @@
 class_name Rock
 extends StaticBody2D
-## Roche destructible. Bloque le vaisseau. Les gisements (ore, gold) sont minables à l'arrêt.
+## Roche destructible. Bloque le vaisseau. Les gisements (ore, gold) sont minables par l'arme.
 
 signal destroyed(rock: Rock)
 
@@ -47,11 +47,6 @@ func take_hit(amount: float) -> void:
 		destroyed.emit(self)
 		queue_free()
 	queue_redraw()
-
-
-## Minage automatique — appelé par sector.gd quand le vaisseau est immobile à portée.
-func mine(power: float) -> void:
-	take_hit(power)
 
 
 func is_mineable() -> bool:

@@ -23,6 +23,7 @@ func default_data() -> Dictionary:
 		"selected_difficulty": 1,
 		"difficulties": {"roc": 1},  # max difficulté débloquée par planète
 		"pinned": [],                 # skill IDs épinglés comme objectifs
+		"run_save": null,             # snapshot d'une run en cours (Sauvegarder et quitter)
 		"options": {"control_mode": "free", "auto_fire": false},
 		"history": [],
 	}
@@ -51,6 +52,15 @@ func save_game() -> void:
 		push_warning("Sauvegarde impossible : %s" % PATH)
 		return
 	file.store_string(JSON.stringify(data, "\t"))
+
+
+func has_run_save() -> bool:
+	return data.get("run_save") is Dictionary
+
+
+func save_run(run_data: Dictionary) -> void:
+	data["run_save"] = run_data
+	save_game()
 
 
 func max_difficulty(planet_id: String) -> int:

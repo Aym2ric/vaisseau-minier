@@ -17,7 +17,6 @@ var _mission_label:  Label
 var _mission_bar:    ProgressBar
 var _extract_bar:    ProgressBar
 var _extract_label:  Label
-var _mining_label:   Label
 var _announce:       Label
 var _announce_time   := 0.0
 var _panel:          PanelContainer
@@ -53,7 +52,6 @@ func _ready() -> void:
 
 	_threat_label = _chip(top)
 	_cargo_label  = _chip(top)
-	_mining_label = _chip(top)
 
 	# --- Barres sous la ligne ---
 	_mission_bar = _bar(ACCENT, Vector2(vp.x - 24.0, 7))
@@ -140,17 +138,12 @@ func _process(delta: float) -> void:
 
 	_cargo_label.text = "Cargo : %s" % RunState.cargo_text()
 
-	# Indicateur de minage
-	_mining_label.visible = RunState.is_mining
-	_mining_label.text    = "⛏ Minage"
-
 	# Barre de mission
 	_mission_bar.max_value = RunState.mission_target
 	_mission_bar.value     = mini(RunState.mission_progress, RunState.mission_target)
 	if RunState.mission_complete:
 		_mission_label.text = "✓ Mission accomplie — TAB pour extraire"
 		_mission_label.visible = true
-		_mining_label.visible = false
 
 	# Libellé mission bas-gauche
 	if RunState.mission_complete:

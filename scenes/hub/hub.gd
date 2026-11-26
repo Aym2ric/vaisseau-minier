@@ -4,6 +4,7 @@ extends Control
 ## Navigation, sélection difficulté, équipement, compétences (arbres par ressources), inventaire.
 
 signal run_started(planet_id: String, difficulty: int)
+signal run_resumed
 
 const PANEL  := Color("3a2622")
 const INK    := Color("f6e7cf")
@@ -224,6 +225,18 @@ func _build_launch_row(parent: Node) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(spacer)
+	if SaveGame.has_run_save():
+		var resume_btn := Button.new()
+		resume_btn.text = "Reprendre →"
+		resume_btn.custom_minimum_size = Vector2(200, 56)
+		resume_btn.add_theme_font_size_override("font_size", 22)
+		resume_btn.add_theme_color_override("font_color", Color("1a0d0a"))
+		var resume_col := Color("3c9fa0")
+		resume_btn.add_theme_stylebox_override("normal",  _box(resume_col, 14, 0))
+		resume_btn.add_theme_stylebox_override("hover",   _box(resume_col.lerp(Color.WHITE, 0.15), 14, 0))
+		resume_btn.add_theme_stylebox_override("pressed", _box(resume_col.darkened(0.2), 14, 0))
+		resume_btn.pressed.connect(func() -> void: run_resumed.emit())
+		row.add_child(resume_btn)
 	var launch_btn := Button.new()
 	launch_btn.text = "Lancer →"
 	launch_btn.custom_minimum_size = Vector2(200, 56)

@@ -27,7 +27,6 @@ var mission_progress := 0
 var mission_complete := false
 
 var extract_progress := 0.0     # 0.0–1.0, géré par sector.gd
-var is_mining        := false   # vrai quand l'outil est actif
 
 var xp              := 0
 var level           := 0
@@ -63,7 +62,6 @@ func start_run(id: String, diff: int = 1) -> void:
 	mission_progress = 0
 	mission_complete = false
 	extract_progress = 0.0
-	is_mining        = false
 	active       = true
 	_started_ms  = Time.get_ticks_msec()
 	hull_changed.emit(hull, max_hull)
@@ -192,6 +190,57 @@ func _pick_upgrades(count: int) -> Array:
 	return pool.slice(0, mini(count, pool.size()))
 
 
+## Sérialise l'état de la run en cours pour la sauvegarde "Sauvegarder et quitter".
+func serialize() -> Dictionary:
+	return {
+		"planet_id":        planet_id,
+		"difficulty":       difficulty,
+		"hull":             hull,
+		"max_hull":         max_hull,
+		"cargo":            cargo.duplicate(),
+		"threat":           threat,
+		"elapsed_time":     elapsed_time,
+		"mission_type":     mission_type,
+		"mission_target":   mission_target,
+		"mission_progress": mission_progress,
+		"mission_complete": mission_complete,
+		"xp":               xp,
+		"level":            level,
+		"xp_to_next":       xp_to_next,
+		"run_upgrades":     run_upgrades.duplicate(),
+		"rerolls":          rerolls,
+		"weapon_upgrades":  weapon_upgrades,
+		"run_evolution":    run_evolution,
+	}
+
+
+## Restaure l'état de la run depuis une sauvegarde — appelé par main.gd lors d'une reprise.
+func restore(data: Dictionary) -> void:
+	planet_id        = String(data.get("planet_id", "roc"))
+	difficulty       = int(data.get("difficulty", 1))
+	hull             = float(data.get("hull", 60.0))
+	max_hull         = float(data.get("max_hull", 60.0))
+	cargo            = data.get("cargo", {}).duplicate()
+	threat           = float(data.get("threat", 0.0))
+	elapsed_time     = float(data.get("elapsed_time", 0.0))
+	mission_type     = String(data.get("mission_type", "eliminate"))
+	mission_target   = int(data.get("mission_target", 10))
+	mission_progress = int(data.get("mission_progress", 0))
+	mission_complete = bool(data.get("mission_complete", false))
+	extract_progress = 0.0
+	xp               = int(data.get("xp", 0))
+	level            = int(data.get("level", 0))
+	xp_to_next       = int(data.get("xp_to_next", 20))
+	run_upgrades     = data.get("run_upgrades", {}).duplicate()
+	rerolls          = int(data.get("rerolls", 0))
+	weapon_upgrades  = int(data.get("weapon_upgrades", 0))
+	run_evolution    = String(data.get("run_evolution", ""))
+	active           = true
+	_started_ms      = Time.get_ticks_msec()
+	hull_changed.emit(hull, max_hull)
+	cargo_changed.emit()
+
+
 ## Termine la run, verse le cargo dans l'inventaire, retourne un résumé.
 func end_run(success: bool) -> Dictionary:
 	active = false
@@ -229,5 +278,7 @@ func end_run(success: bool) -> Dictionary:
 		if difficulty >= int(diffs.get(planet_id, 1)):
 			diffs[planet_id] = difficulty + 1
 			SaveGame.data["difficulties"] = diffs
+	# Consomme la sauvegarde mid-run si elle existait
+	SaveGame.data["run_save"] = null
 	SaveGame.save_game()
 	return summary

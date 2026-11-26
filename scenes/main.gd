@@ -30,6 +30,8 @@ func _show_hub(summary: Dictionary = {}) -> void:
 	hub.last_summary = summary
 	add_child(hub)
 	hub.run_started.connect(_on_hub_play)
+	if SaveGame.has_run_save():
+		hub.run_resumed.connect(_on_hub_resume)
 
 
 func _on_hub_play(planet_id: String, difficulty: int) -> void:
@@ -42,12 +44,25 @@ func _on_hub_play(planet_id: String, difficulty: int) -> void:
 	_load_sector()
 
 
+func _on_hub_resume() -> void:
+	var run_data: Dictionary = SaveGame.data["run_save"]
+	hub.queue_free()
+	hub = null
+	hud = Hud.new()
+	add_child(hud)
+	RunState.restore(run_data["run_state"])
+	SaveGame.data["run_save"] = null
+	SaveGame.save_game()
+	_load_sector(run_data.get("sector", {}))
+
+
 # --- Secteur --------------------------------------------------------------
 
-func _load_sector() -> void:
+func _load_sector(snapshot: Dictionary = {}) -> void:
 	if sector:
 		sector.queue_free()
 	sector = Sector.new()
+	sector.restore_data = snapshot
 	sector.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(sector)
 	move_child(sector, 0)
@@ -167,9 +182,20 @@ func _resume() -> void:
 	hud.hide_panel()
 
 
+func _save_and_quit() -> void:
+	var run_data := {
+		"run_state": RunState.serialize(),
+		"sector":    sector.get_snapshot() if is_instance_valid(sector) else {},
+	}
+	SaveGame.save_run(run_data)
+	RunState.active = false
+	_show_hub({})
+
+
 func _show_pause_panel() -> void:
 	var options: Array = [["Reprendre", _resume]]
 	if RunState.active:
+		options.append(["Sauvegarder et quitter", _save_and_quit, Color("0a1a28")])
 		options.append(["[DEBUG] Outils de test", _show_debug_panel, Color("0a1a10")])
 	hud.show_panel("Pause", "Le jeu est en pause.", options)
 

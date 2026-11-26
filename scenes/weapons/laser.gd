@@ -60,9 +60,15 @@ func update_weapon(delta: float, firing: bool) -> void:
 		var hit := space.intersect_ray(query)
 		var beam_end: Vector2 = hit["position"] if hit else end
 		if hit and hit["collider"].has_method("take_hit"):
-			var dmg_evo := 1.75 if evo == "laser_overload" else (1.5 if evo == "laser_focused" else 1.0)
-			var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
-			hit["collider"].take_hit(damage * delta)
+			var col: Variant = hit["collider"]
+			var hit_dmg: float
+			if col is Rock and (col as Rock).kind not in ["rock", "hard"]:
+				var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
+				hit_dmg = float(stats["mining_damage"]) * mine_mult * delta
+			else:
+				var dmg_evo := 1.75 if evo == "laser_overload" else (1.5 if evo == "laser_focused" else 1.0)
+				hit_dmg = float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * delta
+			col.take_hit(hit_dmg)
 
 		var core_color := Color("5bdfff").lerp(Color("ff5a5f"), heat)
 		var glow_color := core_color

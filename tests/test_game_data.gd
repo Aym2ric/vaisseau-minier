@@ -10,14 +10,13 @@ const REQUIRED_CONFIG := [
 	"dash_speed", "dash_cooldown",
 	"threat_rate", "spawn_base",
 	"rocks", "extract_time", "magnet_radius",
-	"mine_range", "mine_base_rate", "discover_radius",
-	"recycle_dist", "enemy_cap",
+	"discover_radius", "recycle_dist", "enemy_cap",
 ]
 const REQUIRED_PLANET   := ["name", "res", "rare", "bg", "spot", "rock", "friction", "wind"]
 const REQUIRED_RESOURCE := ["name", "color", "base", "rare", "weight"]
 const REQUIRED_ENEMY    := ["hp", "speed", "damage", "radius", "xp"]
 const REQUIRED_ROCK     := ["hp", "radius", "weight", "xp", "mineable"]
-const REQUIRED_WEAPON   := ["name", "cooldown", "damage", "speed", "life"]
+const REQUIRED_WEAPON   := ["name", "cooldown", "damage", "speed", "life", "mining_damage"]
 const REQUIRED_SKILL    := ["name", "desc", "cost", "max", "cost_res", "tab"]
 
 
