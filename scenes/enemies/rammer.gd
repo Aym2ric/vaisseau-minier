@@ -49,6 +49,7 @@ func _on_contact() -> void:
 
 
 func _draw() -> void:
+	super._draw()
 	# Seule la ligne de visée reste dessinée — le corps est le Sprite2D.
 	# Le node est déjà tourné selon aim_angle, donc Vector2.RIGHT = direction de visée.
 	if state == State.AIM:

@@ -239,6 +239,19 @@ const RUN_UPGRADES := {
 	"mine":   {"name": "Forage intensif",      "desc": "+40 % de vitesse de minage."},
 }
 
+## 9 événements planétaires : warning (s), durée active (s, 0 = instantané).
+const EVENTS: Dictionary = {
+	"meteorites":  {"name": "Météorites",           "warning": 20.0, "duration": 0.0},
+	"seisme":      {"name": "Séisme",               "warning": 10.0, "duration": 15.0},
+	"eruption":    {"name": "Éruption cristalline", "warning":  0.0, "duration":  0.0},
+	"epave":       {"name": "Épave détectée",       "warning":  0.0, "duration":  0.0},
+	"migration":   {"name": "Migration ennemie",    "warning": 15.0, "duration":  0.0},
+	"emergence":   {"name": "Émergence",            "warning": 10.0, "duration":  0.0},
+	"tempete":     {"name": "Tempête magnétique",   "warning": 15.0, "duration": 30.0},
+	"infestation": {"name": "Infestation",          "warning": 10.0, "duration": 20.0},
+	"filon":       {"name": "Filon exceptionnel",   "warning":  0.0, "duration":  0.0},
+}
+
 ## 16 modules passifs équipables dans les emplacements débloqués via Logistique.
 const MODULES: Dictionary = {
 	"aimant":                      {"name": "Aimant",                      "desc": "+30 % rayon de ramassage."},

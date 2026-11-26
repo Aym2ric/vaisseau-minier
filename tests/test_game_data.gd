@@ -259,6 +259,22 @@ func test_skill_evo_unlocks_reference_valid_evolutions() -> bool:
 	return true
 
 
+func test_events_count() -> bool:
+	if GameData.EVENTS.size() != 9:
+		push_error("EVENTS devrait avoir 9 entrées, en a %d" % GameData.EVENTS.size())
+		return false
+	return true
+
+
+func test_events_have_all_fields() -> bool:
+	for id in GameData.EVENTS:
+		for field in ["name", "warning", "duration"]:
+			if not GameData.EVENTS[id].has(field):
+				push_error("EVENTS[%s] manque le champ : %s" % [id, field])
+				return false
+	return true
+
+
 func test_modules_count() -> bool:
 	if GameData.MODULES.size() != 16:
 		push_error("MODULES devrait avoir 16 entrées, en a %d" % GameData.MODULES.size())

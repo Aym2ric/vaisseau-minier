@@ -98,3 +98,17 @@ func take_hit(amount: float) -> void:
 
 func on_screen() -> bool:
 	return Rect2(Vector2.ZERO, GameData.MAP_SIZE).has_point(position)
+
+
+func _draw() -> void:
+	if elite_modifier == "" or dead:
+		return
+	var col: Color = GameData.ELITE_MODIFIERS[elite_modifier]["color"]
+	var pulse := 0.55 + 0.45 * sin(_time * 3.5)
+	# Anneau pulsant autour de l'ennemi
+	draw_arc(Vector2.ZERO, radius + 6.0, 0.0, TAU, 32, Color(col, pulse), 2.5, true)
+	# Badge losange au-dessus
+	var cy := -(radius + 16.0)
+	DrawUtils.polygon(self,
+		PackedVector2Array([Vector2(0, cy - 5), Vector2(5, cy), Vector2(0, cy + 5), Vector2(-5, cy)]),
+		Color(col, 0.9), 2.0)

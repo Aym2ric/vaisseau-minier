@@ -40,6 +40,10 @@ var _extract_timer   := 0.0
 
 # Événements
 var _next_event_time  := 60.0
+var _event_warning    := ""       # id de l'event en phase d'alerte
+var _event_trigger_at := 0.0      # _time auquel l'event se déclenche
+var _active_event     := ""       # id de l'event actif (durée > 0)
+var _active_event_end := 0.0      # _time auquel l'event actif se termine
 
 # Recyclage
 var _recycle_timer := 0.0
@@ -130,9 +134,19 @@ func _physics_process(delta: float) -> void:
 		_spawn_wave()
 		spawn_timer = maxf(0.8, float(GameData.CONFIG["spawn_base"]) - RunState.threat * 0.018)
 
-	# Événements
-	if _time >= _next_event_time:
-		_spawn_event()
+	# Événements : alerte → déclenchement
+	if _event_warning != "" and _time >= _event_trigger_at:
+		_trigger_event(_event_warning)
+		_event_warning = ""
+	# Tick + fin de l'event actif
+	if _active_event != "":
+		_active_event_tick(delta)
+		if _time >= _active_event_end:
+			_end_event(_active_event)
+			_active_event = ""
+	# Planifier le prochain event (pas de chevauchement)
+	if _time >= _next_event_time and _event_warning == "" and _active_event == "":
+		_schedule_event()
 		_next_event_time = _time + randf_range(70.0, 130.0)
 
 	# Recyclage des ennemis éloignés
@@ -391,28 +405,87 @@ func _spawn_wave() -> void:
 			spawn_enemy("boss")
 
 
-func _spawn_event() -> void:
-	match randi() % 5:
-		0:
-			for _i in 10:
-				spawn_enemy("mite")
-			announced.emit("Essaim !")
-		1:
-			var x := -30.0 if randf() < 0.5 else GameData.MAP_SIZE.x + 30.0
-			for i in 3:
-				spawn_enemy("gunner", Vector2(x, GameData.MAP_SIZE.y / 2.0 + (i - 1) * 90.0))
-			announced.emit("Raid pirate !")
-		2:
-			for _i in 3:
-				spawn_rock("gold")
-			announced.emit("Filon d'or détecté !")
-		3:
-			spawn_enemy("guardian")
-			announced.emit("Gardien aperçu !")
-		_:
-			for _i in 4:
+func _schedule_event() -> void:
+	var ids: Array = GameData.EVENTS.keys()
+	var id: String = ids[randi() % ids.size()]
+	var edef: Dictionary = GameData.EVENTS[id]
+	var warning := float(edef["warning"])
+	if warning > 0.0:
+		_event_warning = id
+		_event_trigger_at = _time + warning
+		announced.emit("⚠ %s dans %ds !" % [String(edef["name"]), int(warning)])
+	else:
+		_trigger_event(id)
+
+
+func _trigger_event(id: String) -> void:
+	var edef: Dictionary = GameData.EVENTS[id]
+	announced.emit("%s !" % String(edef["name"]))
+	match id:
+		"meteorites":
+			shake = maxf(shake, 0.6)
+			for _i in randi_range(3, 5):
+				var at := Vector2(randf_range(80, GameData.MAP_SIZE.x - 80), randf_range(80, GameData.MAP_SIZE.y - 80))
+				Burst.spawn(effects, at, Color("ff7733"), 65.0, 14)
+				_elite_explosion(at, 70.0, 12.0)
+				spawn_rock("rock")
+		"seisme":
+			shake = maxf(shake, 0.7)
+			for _i in randi_range(2, 4):
+				spawn_rock("hard")
+		"eruption":
+			for _i in randi_range(4, 6):
+				spawn_rock("ore")
+		"epave":
+			spawn_rock("chest")
+			for _i in 2:
 				spawn_rock("repair")
-			announced.emit("Champ de réparation !")
+			announced.emit("Explorez la zone !")
+		"migration":
+			var x := -30.0 if randf() < 0.5 else GameData.MAP_SIZE.x + 30.0
+			for i in 8:
+				spawn_enemy("mite", Vector2(x, randf() * GameData.MAP_SIZE.y))
+			for i in 2:
+				spawn_enemy("gunner", Vector2(x, GameData.MAP_SIZE.y * 0.5 + (i - 0.5) * 100.0))
+		"emergence":
+			for _i in 2:
+				spawn_enemy("guardian")
+		"tempete":
+			pass  # effet continu dans _active_event_tick
+		"infestation":
+			for _i in 5:
+				spawn_enemy("mite")
+		"filon":
+			for _i in 3:
+				spawn_rock("ore")
+			for _i in 2:
+				spawn_rock("gold")
+	var duration := float(edef["duration"])
+	if duration > 0.0:
+		_active_event = id
+		_active_event_end = _time + duration
+
+
+func _active_event_tick(delta: float) -> void:
+	match _active_event:
+		"seisme":
+			shake = maxf(shake, 0.3)
+			if randf() < 0.06 * delta * 60.0:
+				spawn_rock("rock")
+		"tempete":
+			if is_instance_valid(ship):
+				ship.velocity += Vector2(sin(_time * 0.8), cos(_time * 0.6)) * 90.0 * delta
+		"infestation":
+			if fmod(_time, 3.5) < delta:
+				for _i in 3:
+					spawn_enemy("mite")
+
+
+func _end_event(id: String) -> void:
+	match id:
+		"seisme":      announced.emit("Séisme terminé.")
+		"tempete":     announced.emit("Tempête magnétique dissipée.")
+		"infestation": announced.emit("Infestation contenue.")
 
 
 func _elite_explosion(at: Vector2, radius: float, damage: float) -> void:
