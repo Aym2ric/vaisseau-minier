@@ -66,6 +66,9 @@ const RESOURCES := {
 	# Exclusives planétaires
 	"basaltite":  {"name": "Basaltite",    "color": Color(0.400, 0.320, 0.280), "base": 45,  "rare": true,  "weight": 3},
 	"ferrite":    {"name": "Ferrite noire","color": Color(0.350, 0.280, 0.250), "base": 55,  "rare": true,  "weight": 3},
+	"givre":      {"name": "Givre dense",  "color": Color(0.780, 0.900, 1.000), "base": 50,  "rare": true,  "weight": 3},
+	"xenon":      {"name": "Xénon pur",    "color": Color(0.820, 0.700, 1.000), "base": 60,  "rare": true,  "weight": 3},
+	"cendrite":   {"name": "Cendrite",     "color": Color(0.550, 0.380, 0.300), "base": 70,  "rare": true,  "weight": 3},
 	# Boss
 	"noyau":      {"name": "Noyau de gardien", "color": Color(1.0, 0.820, 0.400), "base": 300, "rare": true, "weight": 5},
 }
@@ -77,19 +80,19 @@ const PLANETS := {
 		"friction": 6.0, "wind": 0.0, "exclusive": ["basaltite", "ferrite"],
 	},
 	"glace": {
-		"name": "Glacée", "res": "cristal", "rare": "cryonite", "special": "ice",
+		"name": "Glacée", "res": "cristal", "rare": "givre", "special": "ice",
 		"bg": Color(0.122, 0.196, 0.259), "spot": Color(0.102, 0.169, 0.224), "rock": Color(0.498, 0.592, 0.671),
-		"friction": 1.4, "wind": 0.0,
+		"friction": 1.4, "wind": 0.0, "exclusive": ["cryonite", "givre"],
 	},
 	"gaz": {
-		"name": "Gazeuse", "res": "helium", "rare": "plasma", "special": "gas",
+		"name": "Gazeuse", "res": "helium", "rare": "xenon", "special": "gas",
 		"bg": Color(0.173, 0.122, 0.239), "spot": Color(0.149, 0.102, 0.208), "rock": Color(0.541, 0.478, 0.639),
-		"friction": 4.0, "wind": 260.0,
+		"friction": 4.0, "wind": 260.0, "exclusive": ["plasma", "xenon"],
 	},
 	"volcan": {
-		"name": "Volcanique", "res": "magma", "rare": "obsidienne", "special": "magma",
+		"name": "Volcanique", "res": "magma", "rare": "cendrite", "special": "magma",
 		"bg": Color(0.227, 0.102, 0.071), "spot": Color(0.192, 0.082, 0.055), "rock": Color(0.420, 0.290, 0.251),
-		"friction": 6.0, "wind": 0.0,
+		"friction": 6.0, "wind": 0.0, "exclusive": ["obsidienne", "cendrite"],
 	},
 }
 
@@ -119,6 +122,8 @@ const ENEMIES := {
 	"mite":     {"hp": 2.0,  "speed": 150.0, "damage": 8.0,  "radius": 16.0, "xp": 1},
 	"gunner":   {"hp": 6.0,  "speed": 100.0, "damage": 10.0, "radius": 25.0, "xp": 4},
 	"rammer":   {"hp": 5.0,  "speed": 540.0, "damage": 14.0, "radius": 22.0, "xp": 3},
+	"tank":     {"hp": 20.0, "speed": 55.0,  "damage": 18.0, "radius": 36.0, "xp": 8},
+	"sniper":   {"hp": 4.0,  "speed": 80.0,  "damage": 12.0, "radius": 20.0, "xp": 5, "range": 420.0, "shot_cooldown": 2.5},
 	"guardian": {"hp": 30.0, "speed": 450.0, "damage": 25.0, "radius": 55.0, "xp": 15},
 }
 
@@ -173,8 +178,11 @@ const SKILLS := {
 	# Arbre Navigation
 	"dash":          {"name": "Esquive",             "desc": "Débloque l'esquive.",               "cost": 20, "cost_res": "fer",       "max": 1, "tab": "navigation", "prereqs": []},
 	"thrust":        {"name": "Propulseurs",          "desc": "+8 % de vitesse.",                  "cost": 10, "cost_res": "fer",       "max": 5, "tab": "navigation", "prereqs": []},
-	"extract_boost": {"name": "Turbine d'extraction", "desc": "-15 % temps d'extraction par rang.","cost": 12, "cost_res": "aluminium", "max": 3, "tab": "navigation", "prereqs": []},
-	"threat_slow":   {"name": "Furtivité",            "desc": "-12 % taux de menace par rang.",    "cost": 20, "cost_res": "aluminium", "max": 3, "tab": "navigation", "prereqs": ["thrust"]},
+	"extract_boost": {"name": "Turbine d'extraction", "desc": "-15 % temps d'extraction par rang.",  "cost": 12, "cost_res": "aluminium", "max": 3, "tab": "navigation", "prereqs": []},
+	"threat_slow":   {"name": "Furtivité",            "desc": "-12 % taux de menace par rang.",      "cost": 20, "cost_res": "aluminium", "max": 3, "tab": "navigation", "prereqs": ["thrust"]},
+	"nav_glace":     {"name": "Cap Glaciaire",         "desc": "Débloque la planète Glacée.",         "cost": 25, "cost_res": "fer",       "max": 1, "tab": "navigation", "prereqs": ["thrust"], "unlocks_planet": "glace"},
+	"nav_volcan":    {"name": "Cap Volcanique",        "desc": "Débloque la planète Volcanique.",     "cost": 20, "cost_res": "titane",    "max": 1, "tab": "navigation", "prereqs": ["nav_glace"], "unlocks_planet": "volcan"},
+	"nav_gaz":       {"name": "Cap Gazeux",            "desc": "Débloque la planète Gazeuse.",        "cost": 20, "cost_res": "cryonite",  "max": 1, "tab": "navigation", "prereqs": ["nav_glace"], "unlocks_planet": "gaz"},
 	# Arbre Logistique
 	"hull":          {"name": "Blindage",             "desc": "+15 PV max.",                       "cost": 15, "cost_res": "fer",       "max": 5, "tab": "logistique", "prereqs": []},
 	"magnet":        {"name": "Aimant",               "desc": "+30 % de portée.",                  "cost": 8,  "cost_res": "fer",       "max": 5, "tab": "logistique", "prereqs": []},

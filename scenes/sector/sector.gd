@@ -9,6 +9,8 @@ const _ENEMY_SCENES  = {
 	"mite":     preload("res://scenes/enemies/mite.tscn"),
 	"gunner":   preload("res://scenes/enemies/gunner.tscn"),
 	"rammer":   preload("res://scenes/enemies/rammer.tscn"),
+	"tank":     preload("res://scenes/enemies/tank.tscn"),
+	"sniper":   preload("res://scenes/enemies/sniper.tscn"),
 	"guardian": preload("res://scenes/enemies/guardian.tscn"),
 }
 
@@ -359,6 +361,8 @@ func _spawn_wave() -> void:
 		"mite":   {"weight": 4.0},
 		"gunner": {"weight": 1.5 if lvl >= 2 else 0.4},
 		"rammer": {"weight": 1.5 if lvl >= 2 else 0.3},
+		"tank":   {"weight": 0.6 if lvl >= 2 else 0.0},
+		"sniper": {"weight": 0.8 if lvl >= 2 else 0.1},
 	}
 	for _i in 1 + lvl / 2:
 		var kind := _pick_weighted(weights)

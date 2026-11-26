@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scenes/enemies/sniper.gd" id="1_sniper"]
+[ext_resource type="Texture2D" path="res://assets/sprites/gunner.svg" id="2_sniper_tex"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_sniper"]
+radius = 14.0
+
+[node name="Sniper" type="Area2D"]
+script = ExtResource("1_sniper")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_sniper")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("2_sniper_tex")
+scale = Vector2(1.3, 1.3)

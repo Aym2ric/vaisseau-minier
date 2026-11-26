@@ -96,20 +96,21 @@ func _build_planet_section(parent: Node) -> void:
 	content.add_child(row)
 	var unlocked: Dictionary = SaveGame.data["unlocked"]
 	for id in GameData.PLANETS:
-		if not unlocked.has(id):
-			continue
 		var planet: Dictionary = GameData.PLANETS[id]
+		var is_unlocked: bool = unlocked.has(id)
 		var btn := Button.new()
-		btn.text = planet["name"]
+		btn.text = planet["name"] if is_unlocked else "🔒 %s" % planet["name"]
 		btn.custom_minimum_size = Vector2(130, 44)
 		btn.add_theme_font_size_override("font_size", 15)
-		var pid: String = id
-		btn.pressed.connect(func() -> void:
-			_selected_planet = pid
-			_refresh()
-		)
+		btn.disabled = not is_unlocked
+		if is_unlocked:
+			var pid: String = id
+			btn.pressed.connect(func() -> void:
+				_selected_planet = pid
+				_refresh()
+			)
 		row.add_child(btn)
-		_planet_buttons.append({"id": id, "btn": btn})
+		_planet_buttons.append({"id": id, "btn": btn, "locked": not is_unlocked})
 
 
 func _build_difficulty_section(parent: Node) -> void:

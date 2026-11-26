@@ -175,6 +175,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				KEY_F5: sector.spawn_enemy("guardian")
 				KEY_F6: RunState.complete_mission()
 				KEY_F7: RunState.heal(RunState.max_hull)
+				KEY_F8: sector.spawn_enemy("tank")
+				KEY_F9: sector.spawn_enemy("sniper")
 
 
 func _resume() -> void:
@@ -210,6 +212,8 @@ func _show_debug_panel() -> void:
 		["[F5] Spawn gardien",       func() -> void: sector.spawn_enemy("guardian"),        dbg],
 		["[F6] Mission accomplie",   func() -> void: RunState.complete_mission(),            dbg],
 		["[F7] Soigner (coque max)", func() -> void: RunState.heal(RunState.max_hull),      dbg],
+		["[F8] Spawn tank",           func() -> void: sector.spawn_enemy("tank"),            dbg],
+		["[F9] Spawn sniper",         func() -> void: sector.spawn_enemy("sniper"),          dbg],
 		["Reprendre",                _resume],
 	])
 

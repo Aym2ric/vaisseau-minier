@@ -104,5 +104,10 @@ func buy_skill(id: String) -> bool:
 		inventory.erase(res_id)
 	var skills: Dictionary = data["skills"]
 	skills[id] = level + 1
+	# Déblocage planète si le skill le prévoit
+	var planet_unlock: String = String(def.get("unlocks_planet", ""))
+	if planet_unlock != "":
+		var unlocked: Dictionary = data["unlocked"]
+		unlocked[planet_unlock] = true
 	save_game()
 	return true
