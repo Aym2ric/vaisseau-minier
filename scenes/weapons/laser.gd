@@ -36,7 +36,7 @@ func _exit_tree() -> void:
 func update_weapon(delta: float, firing: bool) -> void:
 	var stats: Dictionary = GameData.WEAPONS["laser"]
 	var heat_rate := float(stats["heat_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate"))
-	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("laser_cool"))
+	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("laser_cool")) * (1.0 + 0.08 * SaveGame.skill("fire_rate_perm"))
 	if firing and not overheated:
 		heat = minf(1.0, heat + heat_rate * delta)
 		if heat >= 1.0:
@@ -63,7 +63,7 @@ func update_weapon(delta: float, firing: bool) -> void:
 			var col: Variant = hit["collider"]
 			var hit_dmg: float
 			if col is Rock and (col as Rock).kind not in ["rock", "hard"]:
-				var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
+				var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
 				hit_dmg = float(stats["mining_damage"]) * mine_mult * delta
 			else:
 				var dmg_evo := 1.75 if evo == "laser_overload" else (1.5 if evo == "laser_focused" else 1.0)

@@ -46,8 +46,7 @@ func _on_body(body: Node) -> void:
 		return
 	_taken = true
 	RunState.add_resource(resource_id, amount)
-	if xp > 0:
-		RunState.add_xp(xp)
+	RunState.add_xp(xp + SaveGame.skill("pickup_xp"))
 	var res: Dictionary = GameData.RESOURCES[resource_id]
 	if effects:
 		FloatText.spawn(effects, position + Vector2(0, -14), "+%d %s" % [amount, res["name"]], res["color"])

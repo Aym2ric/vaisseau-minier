@@ -181,8 +181,9 @@ func _update_extraction(delta: float) -> void:
 			announced.emit("Extraction annulée !")
 			return
 		_extract_timer += delta
-		RunState.extract_progress = _extract_timer / float(GameData.CONFIG["extract_time"])
-		if _extract_timer >= float(GameData.CONFIG["extract_time"]):
+		var extract_time := float(GameData.CONFIG["extract_time"]) * maxf(0.3, 1.0 - 0.15 * SaveGame.skill("extract_boost"))
+		RunState.extract_progress = _extract_timer / extract_time
+		if _extract_timer >= extract_time:
 			_extracting = false
 			RunState.extract_progress = 1.0
 			cleared.emit()
@@ -263,7 +264,7 @@ func _pick_weighted(table: Dictionary) -> String:
 
 func _on_rock_destroyed(rock: Rock) -> void:
 	Burst.spawn(effects, rock.position, rock.fill_color(), 40.0, 8)
-	var mult := RunState.get_mult()
+	var mult := RunState.get_mult() * (1.0 + 0.1 * SaveGame.skill("mine_yield"))
 	# XP de minage (gisements uniquement — les armes ne peuvent pas les détruire)
 	match rock.kind:
 		"ore":  RunState.add_xp(2)
@@ -271,7 +272,8 @@ func _on_rock_destroyed(rock: Rock) -> void:
 	match rock.kind:
 		"ore":
 			var rare_id: String  = String(planet.get("rare", ""))
-			var is_rare := rare_id != "" and randf() < 0.2
+			var ore_luck_bonus := 0.15 * SaveGame.skill("ore_luck")
+			var is_rare := rare_id != "" and randf() < 0.2 + ore_luck_bonus
 			var res_id  := rare_id if is_rare else String(planet["res"])
 			var total   := maxi(1, int(round(3.0 * mult)))
 			_drop(rock.position, res_id, total, is_rare)

@@ -17,7 +17,7 @@ const REQUIRED_RESOURCE := ["name", "color", "base", "rare", "weight"]
 const REQUIRED_ENEMY    := ["hp", "speed", "damage", "radius", "xp"]
 const REQUIRED_ROCK     := ["hp", "radius", "weight", "xp", "mineable"]
 const REQUIRED_WEAPON   := ["name", "cooldown", "damage", "speed", "life", "mining_damage"]
-const REQUIRED_SKILL    := ["name", "desc", "cost", "max", "cost_res", "tab"]
+const REQUIRED_SKILL    := ["name", "desc", "cost", "max", "cost_res", "tab", "prereqs"]
 
 
 func test_config_has_all_keys() -> bool:
@@ -141,6 +141,16 @@ func test_run_evolutions_have_all_fields() -> bool:
 		for field in REQUIRED_EVOLUTION:
 			if not GameData.RUN_EVOLUTIONS[id].has(field):
 				push_error("RUN_EVOLUTIONS[%s] manque le champ : %s" % [id, field])
+				return false
+	return true
+
+
+func test_skill_prereqs_reference_valid_skills() -> bool:
+	for id in GameData.SKILLS:
+		var prereqs: Array = GameData.SKILLS[id].get("prereqs", [])
+		for prereq_id: String in prereqs:
+			if not GameData.SKILLS.has(prereq_id):
+				push_error("SKILLS[%s].prereqs référence skill inconnu : %s" % [id, prereq_id])
 				return false
 	return true
 

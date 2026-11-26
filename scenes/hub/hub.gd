@@ -427,8 +427,14 @@ func _rebuild_tree() -> void:
 		var res_id:  String = String(def["cost_res"])
 		var cost:      int = int(def["cost"]) * (level + 1)
 		var have:      int = int(inventory.get(res_id, 0))
-		var can_buy: bool  = have >= cost and level < max_level
 		var res_name: String = GameData.RESOURCES[res_id]["name"] if GameData.RESOURCES.has(res_id) else res_id
+		# Prérequis
+		var missing: PackedStringArray = []
+		for prereq_id: String in def.get("prereqs", []):
+			if SaveGame.skill(prereq_id) < 1 and GameData.SKILLS.has(prereq_id):
+				missing.append(GameData.SKILLS[prereq_id]["name"])
+		var locked: bool = missing.size() > 0
+		var can_buy: bool  = have >= cost and level < max_level and not locked
 
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 10)
@@ -442,18 +448,24 @@ func _rebuild_tree() -> void:
 		for i in max_level:
 			dots += "●" if i < level else "○"
 		var name_lbl := Label.new()
-		_style_label(name_lbl, 14, INK if level < max_level else MUTED)
-		name_lbl.text = "%s  %s" % [def["name"], dots]
+		var name_color := MUTED.darkened(0.4) if locked else (INK if level < max_level else MUTED)
+		_style_label(name_lbl, 14, name_color)
+		name_lbl.text = "%s%s  %s" % ["🔒 " if locked else "", def["name"], dots]
 		info.add_child(name_lbl)
 
 		var desc_lbl := Label.new()
 		_style_label(desc_lbl, 12, MUTED)
-		desc_lbl.text = "%s — coût : %d %s" % [def["desc"], cost, res_name]
+		if locked:
+			desc_lbl.text = "Prérequis : %s" % ", ".join(missing)
+		else:
+			desc_lbl.text = "%s — coût : %d %s" % [def["desc"], cost, res_name]
 		info.add_child(desc_lbl)
 
 		var btn: Button
 		if level >= max_level:
 			btn = _small_btn("MAX", false)
+		elif locked:
+			btn = _small_btn("🔒", false)
 		else:
 			btn = _small_btn("%d %s" % [cost, res_name], can_buy)
 			var skill_id: String = id

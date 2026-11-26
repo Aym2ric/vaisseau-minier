@@ -88,6 +88,11 @@ func buy_skill(id: String) -> bool:
 	var level := skill(id)
 	if level >= int(def["max"]):
 		return false
+	# Vérification des prérequis
+	var prereqs: Array = def.get("prereqs", [])
+	for prereq_id: String in prereqs:
+		if skill(prereq_id) < 1:
+			return false
 	var res_id: String = String(def["cost_res"])
 	var cost: int = int(def["cost"]) * (level + 1)
 	var inventory: Dictionary = data["inventory"]

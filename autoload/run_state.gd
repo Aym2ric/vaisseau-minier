@@ -71,7 +71,10 @@ func start_run(id: String, diff: int = 1) -> void:
 ## Avance le temps et la menace — appelé par sector.gd à chaque _physics_process.
 func tick(delta: float, threat_mult: float = 1.0) -> void:
 	elapsed_time += delta
-	threat += delta * float(GameData.CONFIG["threat_rate"]) * threat_mult
+	var slow := maxf(0.1, 1.0 - 0.12 * SaveGame.skill("threat_slow"))
+	threat += delta * float(GameData.CONFIG["threat_rate"]) * threat_mult * slow
+	if active and SaveGame.skill("repair_nano") > 0:
+		heal(0.5 * SaveGame.skill("repair_nano") * delta)
 
 
 func threat_level() -> int:
@@ -132,7 +135,7 @@ func cargo_text() -> String:
 
 
 func add_xp(amount: int) -> void:
-	xp += amount
+	xp += amount + int(ceil(amount * 0.1 * SaveGame.skill("xp_boost")))
 	if xp >= xp_to_next:
 		xp -= xp_to_next
 		level += 1

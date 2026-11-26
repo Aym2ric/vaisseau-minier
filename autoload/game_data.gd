@@ -35,22 +35,46 @@ const CONFIG := {
 }
 
 const RESOURCES := {
+	# Communes (partagées)
 	"fer":        {"name": "Fer",          "color": Color(0.824, 0.655, 0.486), "base": 10,  "rare": false, "weight": 1},
+	"cuivre":     {"name": "Cuivre",       "color": Color(0.780, 0.440, 0.220), "base": 12,  "rare": false, "weight": 1},
+	"carbone":    {"name": "Carbone",      "color": Color(0.300, 0.300, 0.320), "base": 8,   "rare": false, "weight": 1},
+	"silicium":   {"name": "Silicium",     "color": Color(0.560, 0.620, 0.720), "base": 15,  "rare": false, "weight": 1},
 	"cristal":    {"name": "Cristal",      "color": Color(0.561, 0.910, 1.0),   "base": 22,  "rare": false, "weight": 1},
 	"helium":     {"name": "Hélium-3",     "color": Color(0.788, 0.608, 1.0),   "base": 36,  "rare": false, "weight": 1},
 	"magma":      {"name": "Magma",        "color": Color(1.0, 0.416, 0.122),   "base": 55,  "rare": false, "weight": 1},
+	# Peu communes (partagées)
+	"aluminium":  {"name": "Aluminium",    "color": Color(0.780, 0.820, 0.850), "base": 28,  "rare": false, "weight": 2},
+	"nickel":     {"name": "Nickel",       "color": Color(0.470, 0.520, 0.350), "base": 22,  "rare": false, "weight": 2},
+	"lithium":    {"name": "Lithium",      "color": Color(0.900, 0.880, 0.950), "base": 35,  "rare": false, "weight": 2},
+	"cobalt":     {"name": "Cobalt",       "color": Color(0.250, 0.420, 0.780), "base": 40,  "rare": false, "weight": 2},
+	# Rares (partagées)
 	"titane":     {"name": "Titane",       "color": Color(0.875, 0.906, 0.949), "base": 60,  "rare": true,  "weight": 3},
+	"tungstene":  {"name": "Tungstène",    "color": Color(0.380, 0.400, 0.450), "base": 65,  "rare": true,  "weight": 3},
+	"uranium":    {"name": "Uranium",      "color": Color(0.450, 0.850, 0.220), "base": 75,  "rare": true,  "weight": 3},
+	"platine":    {"name": "Platine",      "color": Color(0.900, 0.920, 0.950), "base": 90,  "rare": true,  "weight": 3},
 	"cryonite":   {"name": "Cryonite",     "color": Color(0.247, 0.722, 1.0),   "base": 80,  "rare": true,  "weight": 3},
 	"plasma":     {"name": "Plasma",       "color": Color(1.0, 0.478, 0.851),   "base": 100, "rare": true,  "weight": 3},
 	"obsidienne": {"name": "Obsidienne",   "color": Color(0.486, 0.420, 1.0),   "base": 130, "rare": true,  "weight": 3},
+	# Épiques (partagées)
+	"iridium":    {"name": "Iridium",      "color": Color(0.550, 0.300, 0.780), "base": 120, "rare": true,  "weight": 4},
+	"diamant":    {"name": "Diamant",      "color": Color(0.700, 0.950, 1.0),   "base": 160, "rare": true,  "weight": 4},
+	"etherium":   {"name": "Étherium",     "color": Color(0.850, 0.400, 1.0),   "base": 200, "rare": true,  "weight": 4},
+	# Légendaires (partagées)
+	"exonium":    {"name": "Exonium",      "color": Color(1.0, 0.850, 0.200),   "base": 350, "rare": true,  "weight": 5},
+	"asterium":   {"name": "Astérium",     "color": Color(0.920, 0.950, 1.0),   "base": 450, "rare": true,  "weight": 5},
+	# Exclusives planétaires
+	"basaltite":  {"name": "Basaltite",    "color": Color(0.400, 0.320, 0.280), "base": 45,  "rare": true,  "weight": 3},
+	"ferrite":    {"name": "Ferrite noire","color": Color(0.350, 0.280, 0.250), "base": 55,  "rare": true,  "weight": 3},
+	# Boss
 	"noyau":      {"name": "Noyau de gardien", "color": Color(1.0, 0.820, 0.400), "base": 300, "rare": true, "weight": 5},
 }
 
 const PLANETS := {
 	"roc": {
-		"name": "Rocheuse", "res": "fer", "rare": "titane", "special": "",
+		"name": "Rocheuse", "res": "fer", "rare": "basaltite", "special": "",
 		"bg": Color(0.227, 0.165, 0.122), "spot": Color(0.200, 0.145, 0.106), "rock": Color(0.627, 0.478, 0.369),
-		"friction": 6.0, "wind": 0.0,
+		"friction": 6.0, "wind": 0.0, "exclusive": ["basaltite", "ferrite"],
 	},
 	"glace": {
 		"name": "Glacée", "res": "cristal", "rare": "cryonite", "special": "ice",
@@ -147,22 +171,31 @@ const RUN_UPGRADES := {
 ## Compétences permanentes — débloquées en dépensant des ressources dans les 4 arbres.
 const SKILLS := {
 	# Arbre Navigation
-	"dash":          {"name": "Esquive",          "desc": "Débloque l'esquive.",        "cost": 20, "cost_res": "fer",     "max": 1, "tab": "navigation"},
-	"thrust":        {"name": "Propulseurs",       "desc": "+8 % de vitesse.",           "cost": 10, "cost_res": "fer",     "max": 5, "tab": "navigation"},
+	"dash":          {"name": "Esquive",             "desc": "Débloque l'esquive.",               "cost": 20, "cost_res": "fer",       "max": 1, "tab": "navigation", "prereqs": []},
+	"thrust":        {"name": "Propulseurs",          "desc": "+8 % de vitesse.",                  "cost": 10, "cost_res": "fer",       "max": 5, "tab": "navigation", "prereqs": []},
+	"extract_boost": {"name": "Turbine d'extraction", "desc": "-15 % temps d'extraction par rang.","cost": 12, "cost_res": "aluminium", "max": 3, "tab": "navigation", "prereqs": []},
+	"threat_slow":   {"name": "Furtivité",            "desc": "-12 % taux de menace par rang.",    "cost": 20, "cost_res": "aluminium", "max": 3, "tab": "navigation", "prereqs": ["thrust"]},
 	# Arbre Logistique
-	"hull":          {"name": "Blindage",          "desc": "+15 PV max.",                "cost": 15, "cost_res": "fer",     "max": 5, "tab": "logistique"},
-	"magnet":        {"name": "Aimant",            "desc": "+30 % de portée.",           "cost": 8,  "cost_res": "fer",     "max": 5, "tab": "logistique"},
-	"insure":        {"name": "Récupération",      "desc": "+12 % cargo sauvé à mort.",  "cost": 15, "cost_res": "titane",  "max": 3, "tab": "logistique"},
+	"hull":          {"name": "Blindage",             "desc": "+15 PV max.",                       "cost": 15, "cost_res": "fer",       "max": 5, "tab": "logistique", "prereqs": []},
+	"magnet":        {"name": "Aimant",               "desc": "+30 % de portée.",                  "cost": 8,  "cost_res": "fer",       "max": 5, "tab": "logistique", "prereqs": []},
+	"insure":        {"name": "Récupération",         "desc": "+12 % cargo sauvé à mort.",         "cost": 15, "cost_res": "titane",    "max": 3, "tab": "logistique", "prereqs": ["hull"]},
+	"xp_boost":      {"name": "Capteurs avancés",     "desc": "+10 % XP gagné par rang.",          "cost": 10, "cost_res": "aluminium", "max": 3, "tab": "logistique", "prereqs": []},
+	"repair_nano":   {"name": "Nanorobots",           "desc": "Régénère 0,5 PV/s en run par rang.","cost": 25, "cost_res": "platine",   "max": 3, "tab": "logistique", "prereqs": ["hull"]},
+	"pickup_xp":     {"name": "Analyseur de minerai", "desc": "+1 XP par ressource ramassée.",     "cost": 15, "cost_res": "cristal",   "max": 3, "tab": "logistique", "prereqs": []},
 	# Arbre Armement
-	"reroll":        {"name": "Reconfigurateur",   "desc": "+1 actualisation/run.",      "cost": 15, "cost_res": "cristal", "max": 3, "tab": "armement"},
-	"blaster_multi": {"name": "Double canon",      "desc": "+1 projectile.",             "cost": 20, "cost_res": "cristal", "max": 3, "tab": "armement"},
-	"blaster_dmg":   {"name": "Calibre",           "desc": "+20 % de dégâts.",           "cost": 15, "cost_res": "cristal", "max": 5, "tab": "armement"},
-	"laser_dmg":     {"name": "Laser surpuissant", "desc": "+20 % de dégâts/s.",         "cost": 15, "cost_res": "cristal", "max": 5, "tab": "armement"},
-	"laser_cool":    {"name": "Dissipateur",       "desc": "+15 % refroidissement.",     "cost": 12, "cost_res": "cristal", "max": 4, "tab": "armement"},
-	"launcher_dmg":  {"name": "Ogive renforcée",   "desc": "+20 % de dégâts.",           "cost": 15, "cost_res": "cristal", "max": 5, "tab": "armement"},
-	"flame_dmg":     {"name": "Carburant enrichi", "desc": "+20 % de dégâts.",           "cost": 15, "cost_res": "cristal", "max": 5, "tab": "armement"},
-	"flame_fuel":    {"name": "Réservoir étendu",  "desc": "+15 % refroidissement.",     "cost": 12, "cost_res": "cristal", "max": 4, "tab": "armement"},
+	"reroll":           {"name": "Reconfigurateur",    "desc": "+1 actualisation/run.",              "cost": 15, "cost_res": "cristal",   "max": 3, "tab": "armement", "prereqs": []},
+	"fire_rate_perm":   {"name": "Module de cadence",  "desc": "-8 % rechargement toutes armes.",   "cost": 15, "cost_res": "cristal",   "max": 3, "tab": "armement", "prereqs": []},
+	"blaster_dmg":      {"name": "Calibre",            "desc": "+20 % de dégâts.",                  "cost": 15, "cost_res": "cristal",   "max": 5, "tab": "armement", "prereqs": []},
+	"blaster_multi":    {"name": "Double canon",       "desc": "+1 projectile.",                    "cost": 20, "cost_res": "cristal",   "max": 3, "tab": "armement", "prereqs": ["blaster_dmg"]},
+	"laser_dmg":        {"name": "Laser surpuissant",  "desc": "+20 % de dégâts/s.",               "cost": 15, "cost_res": "cristal",   "max": 5, "tab": "armement", "prereqs": []},
+	"laser_cool":       {"name": "Dissipateur",        "desc": "+15 % refroidissement.",            "cost": 12, "cost_res": "cristal",   "max": 4, "tab": "armement", "prereqs": ["laser_dmg"]},
+	"launcher_dmg":     {"name": "Ogive renforcée",    "desc": "+20 % de dégâts.",                  "cost": 15, "cost_res": "cristal",   "max": 5, "tab": "armement", "prereqs": []},
+	"explosion_dmg":    {"name": "Ogive avancée",      "desc": "+20 % dégâts d'explosion.",         "cost": 15, "cost_res": "tungstene", "max": 3, "tab": "armement", "prereqs": ["launcher_dmg"]},
+	"flame_dmg":        {"name": "Carburant enrichi",  "desc": "+20 % de dégâts.",                  "cost": 15, "cost_res": "cristal",   "max": 5, "tab": "armement", "prereqs": []},
+	"flame_fuel":       {"name": "Réservoir étendu",   "desc": "+15 % refroidissement.",            "cost": 12, "cost_res": "cristal",   "max": 4, "tab": "armement", "prereqs": ["flame_dmg"]},
 	# Arbre Minage
-	"mine_speed":    {"name": "Forage accéléré",   "desc": "+20 % vitesse de minage.",   "cost": 10, "cost_res": "fer",     "max": 5, "tab": "minage"},
-	"mine_range":    {"name": "Portée étendue",    "desc": "+20 % de portée de minage.", "cost": 12, "cost_res": "cristal", "max": 3, "tab": "minage"},
+	"mine_speed":    {"name": "Forage accéléré",    "desc": "+20 % vitesse de minage.",         "cost": 10, "cost_res": "fer",       "max": 5, "tab": "minage", "prereqs": []},
+	"mine_yield":    {"name": "Rendement optimisé", "desc": "+10 % ressources par minerai.",    "cost": 10, "cost_res": "fer",       "max": 5, "tab": "minage", "prereqs": []},
+	"mine_range":    {"name": "Forage intensif",    "desc": "+15 % dégâts de minage par rang.", "cost": 12, "cost_res": "cristal",   "max": 3, "tab": "minage", "prereqs": []},
+	"ore_luck":      {"name": "Veine",              "desc": "+15 % chance de gisement rare.",   "cost": 20, "cost_res": "cristal",   "max": 3, "tab": "minage", "prereqs": ["mine_speed"]},
 }

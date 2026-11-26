@@ -118,6 +118,29 @@ func test_default_data_stats_has_required_keys() -> bool:
 	return true
 
 
+func test_buy_skill_blocked_by_prereq() -> bool:
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	var old_inv: Dictionary = SaveGame.data["inventory"].duplicate()
+	SaveGame.data["skills"] = {}
+	SaveGame.data["inventory"] = {"cristal": 999}
+	# insure nécessite hull — sans hull, l'achat doit échouer
+	var result := not SaveGame.buy_skill("insure")
+	SaveGame.data["skills"] = old_skills
+	SaveGame.data["inventory"] = old_inv
+	return result
+
+
+func test_buy_skill_allowed_after_prereq_met() -> bool:
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	var old_inv: Dictionary = SaveGame.data["inventory"].duplicate()
+	SaveGame.data["skills"] = {"hull": 1}
+	SaveGame.data["inventory"] = {"titane": 999}
+	var result := SaveGame.buy_skill("insure")
+	SaveGame.data["skills"] = old_skills
+	SaveGame.data["inventory"] = old_inv
+	return result
+
+
 func test_default_data_stats_start_at_zero() -> bool:
 	var d := SaveGame.default_data()
 	var s: Dictionary = d["stats"]
