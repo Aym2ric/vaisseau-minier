@@ -20,6 +20,8 @@ func default_data() -> Dictionary:
 		"weapons": {"blaster": true},
 		"equipped": {"weapon": "blaster"},
 		"selected_ship": "polyvalent",
+		"ships_unlocked": {"polyvalent": true},
+		"evos_unlocked": {},
 		"selected_planet": "roc",
 		"selected_difficulty": 1,
 		"difficulties": {"roc": 1},  # max difficulté débloquée par planète
@@ -70,6 +72,16 @@ func max_difficulty(planet_id: String) -> int:
 	return int(diffs.get(planet_id, 1))
 
 
+func ship_unlocked(id: String) -> bool:
+	var ships: Dictionary = data.get("ships_unlocked", {"polyvalent": true})
+	return bool(ships.get(id, false))
+
+
+func evo_unlocked(id: String) -> bool:
+	var evos: Dictionary = data.get("evos_unlocked", {})
+	return bool(evos.get(id, false))
+
+
 func skill(id: String) -> int:
 	var skills: Dictionary = data["skills"]
 	return int(skills.get(id, 0))
@@ -110,5 +122,17 @@ func buy_skill(id: String) -> bool:
 	if planet_unlock != "":
 		var unlocked: Dictionary = data["unlocked"]
 		unlocked[planet_unlock] = true
+	# Déblocage vaisseau si le skill le prévoit
+	var ship_unlock: String = String(def.get("unlocks_ship", ""))
+	if ship_unlock != "":
+		if not data.has("ships_unlocked"):
+			data["ships_unlocked"] = {"polyvalent": true}
+		(data["ships_unlocked"] as Dictionary)[ship_unlock] = true
+	# Déblocage évolution si le skill le prévoit
+	var evo_unlock: String = String(def.get("unlocks_evo", ""))
+	if evo_unlock != "":
+		if not data.has("evos_unlocked"):
+			data["evos_unlocked"] = {}
+		(data["evos_unlocked"] as Dictionary)[evo_unlock] = true
 	save_game()
 	return true

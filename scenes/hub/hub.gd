@@ -371,16 +371,19 @@ func _show_hangar() -> void:
 	var selected_ship: String = String(SaveGame.data.get("selected_ship", "polyvalent"))
 	for ship_id in GameData.SHIPS:
 		var sdef: Dictionary = GameData.SHIPS[ship_id]
+		var unlocked: bool = SaveGame.ship_unlocked(ship_id)
 		var is_sel: bool = ship_id == selected_ship
-		var row := _slot_row("Vaisseau", String(sdef["name"]), true)
+		var label := String(sdef["name"]) + ("" if unlocked else " 🔒")
+		var row := _slot_row("Vaisseau", label, true)
 		(row as PanelContainer).add_theme_stylebox_override("panel", _flat(BG_SEL if is_sel else BG_ITEM, 6, CYAN if is_sel else BORDER))
-		var cap_ship: String = ship_id
-		(row as PanelContainer).gui_input.connect(func(event: InputEvent) -> void:
-			if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
-				SaveGame.data["selected_ship"] = cap_ship
-				SaveGame.save_game()
-				_switch_section("hangar")
-		)
+		if unlocked:
+			var cap_ship: String = ship_id
+			(row as PanelContainer).gui_input.connect(func(event: InputEvent) -> void:
+				if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+					SaveGame.data["selected_ship"] = cap_ship
+					SaveGame.save_game()
+					_switch_section("hangar")
+			)
 		col.add_child(row)
 
 	# Arme

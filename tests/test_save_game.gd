@@ -150,3 +150,61 @@ func test_default_data_stats_start_at_zero() -> bool:
 func test_default_data_has_selected_ship() -> bool:
 	var d := SaveGame.default_data()
 	return d.has("selected_ship") and String(d["selected_ship"]) == "polyvalent"
+
+
+func test_default_data_has_ships_unlocked() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("ships_unlocked") and d["ships_unlocked"] is Dictionary and bool(d["ships_unlocked"].get("polyvalent", false))
+
+
+func test_default_data_has_evos_unlocked() -> bool:
+	var d := SaveGame.default_data()
+	return d.has("evos_unlocked") and d["evos_unlocked"] is Dictionary
+
+
+func test_ship_unlocked_polyvalent_always_true() -> bool:
+	return SaveGame.ship_unlocked("polyvalent")
+
+
+func test_ship_unlocked_unknown_returns_false() -> bool:
+	return not SaveGame.ship_unlocked("vaisseau_inconnu_xyz")
+
+
+func test_evo_unlocked_unknown_returns_false() -> bool:
+	return not SaveGame.evo_unlocked("evo_inconnue_xyz")
+
+
+func test_buy_skill_unlocks_ship() -> bool:
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	var old_inv: Dictionary = SaveGame.data["inventory"].duplicate()
+	var old_ships: Variant = SaveGame.data.get("ships_unlocked")
+	SaveGame.data["skills"] = {"sprint_boost": 1}
+	SaveGame.data["inventory"] = {"cristal": 999}
+	SaveGame.data["ships_unlocked"] = {"polyvalent": true}
+	var result := SaveGame.buy_skill("ship_mobile")
+	var unlocked: bool = bool(SaveGame.data.get("ships_unlocked", {}).get("mobile", false))
+	SaveGame.data["skills"] = old_skills
+	SaveGame.data["inventory"] = old_inv
+	if old_ships == null:
+		SaveGame.data.erase("ships_unlocked")
+	else:
+		SaveGame.data["ships_unlocked"] = old_ships
+	return result and unlocked
+
+
+func test_buy_skill_unlocks_evo() -> bool:
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	var old_inv: Dictionary = SaveGame.data["inventory"].duplicate()
+	var old_evos: Variant = SaveGame.data.get("evos_unlocked")
+	SaveGame.data["skills"] = {"blaster_dmg": 1}
+	SaveGame.data["inventory"] = {"cryonite": 999}
+	SaveGame.data["evos_unlocked"] = {}
+	var result := SaveGame.buy_skill("evo_blaster_heavy")
+	var unlocked: bool = bool(SaveGame.data.get("evos_unlocked", {}).get("blaster_heavy", false))
+	SaveGame.data["skills"] = old_skills
+	SaveGame.data["inventory"] = old_inv
+	if old_evos == null:
+		SaveGame.data.erase("evos_unlocked")
+	else:
+		SaveGame.data["evos_unlocked"] = old_evos
+	return result and unlocked

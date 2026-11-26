@@ -52,6 +52,7 @@ func _physics_process(delta: float) -> void:
 	var sdef: Dictionary = GameData.SHIPS.get(RunState.ship_id, GameData.SHIPS["polyvalent"])
 	var max_speed: float = float(sdef["speed"]) \
 		* (1.0 + 0.08 * SaveGame.skill("thrust")) \
+		* (1.0 + 0.12 * SaveGame.skill("sprint_boost")) \
 		* (1.0 + 0.15 * RunState.run_upgrade_level("speed"))
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var aim  := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
@@ -146,10 +147,11 @@ func _try_dash() -> void:
 	if SaveGame.skill("dash") < 1 or dash_cooldown > 0.0:
 		return
 	var dir := velocity.normalized() if velocity.length() > 20.0 else Vector2.RIGHT.rotated(rotation)
-	velocity     = dir * float(GameData.CONFIG["dash_speed"])
-	invulnerable = maxf(invulnerable, 0.3)
+	var dash_vel := float(GameData.CONFIG["dash_speed"]) * (1.0 + 0.20 * SaveGame.skill("dash_speed_skill"))
+	velocity     = dir * dash_vel
+	invulnerable = maxf(invulnerable, 0.3 + 0.1 * SaveGame.skill("dash_invuln"))
 	dash_time    = 0.2
-	dash_cooldown = float(GameData.CONFIG["dash_cooldown"])
+	dash_cooldown = float(GameData.CONFIG["dash_cooldown"]) * maxf(0.3, 1.0 - 0.15 * SaveGame.skill("dash_cooldown_skill"))
 
 
 func take_damage(amount: float) -> void:

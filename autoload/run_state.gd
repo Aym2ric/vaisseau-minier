@@ -176,8 +176,13 @@ func _trigger_evolution() -> void:
 	var pool: Array = []
 	for evo_id in GameData.RUN_EVOLUTIONS:
 		var evo: Dictionary = GameData.RUN_EVOLUTIONS[evo_id]
-		if String(evo["weapon"]) == weapon_id:
-			pool.append(evo_id)
+		if String(evo["weapon"]) != weapon_id:
+			continue
+		# Si des évos sont débloquées dans la sauvegarde, filtrer la pool sur celles-ci
+		var evos: Dictionary = SaveGame.data.get("evos_unlocked", {})
+		if evos.size() > 0 and not bool(evos.get(evo_id, false)):
+			continue
+		pool.append(evo_id)
 	if pool.size() > 0:
 		evolution_available.emit(pool)
 

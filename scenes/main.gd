@@ -2,6 +2,8 @@ extends Node2D
 ## Point d'entrée : hub entre les runs, secteur pendant la run.
 ## GDD V3 : une carte par expédition, extraction volontaire.
 
+const HUB_SCENE := preload("res://scenes/hub/hub.tscn")
+
 var sector: Sector
 var hud: Hud
 var hub: Hub
@@ -26,8 +28,10 @@ func _show_hub(summary: Dictionary = {}) -> void:
 	if hud:
 		hud.queue_free()
 		hud = null
-	hub = Hub.new()
+	hub = HUB_SCENE.instantiate()
 	hub.last_summary = summary
+	hub.position = Vector2.ZERO
+	hub.size = get_viewport().get_visible_rect().size
 	add_child(hub)
 	hub.run_started.connect(_on_hub_play)
 	if SaveGame.has_run_save():

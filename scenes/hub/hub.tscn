@@ -1,0 +1,115 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/hub/hub.gd" id="1_hub"]
+
+[node name="Hub" type="Control"]
+script = ExtResource("1_hub")
+
+[node name="BG" type="ColorRect" parent="."]
+anchors_preset = 15
+color = Color(0.051, 0.067, 0.09, 1)
+
+[node name="Root" type="VBoxContainer" parent="."]
+anchors_preset = 15
+theme_override_constants/separation = 0
+
+[node name="Header" type="PanelContainer" parent="Root"]
+
+[node name="HeaderRow" type="HBoxContainer" parent="Root/Header"]
+theme_override_constants/separation = 0
+
+[node name="HeaderLeft" type="MarginContainer" parent="Root/Header/HeaderRow"]
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="HeaderTitle" type="Label" parent="Root/Header/HeaderRow/HeaderLeft"]
+text = "VAISSEAU MINIER  /  VAISSEAU-MÈRE"
+vertical_alignment = 1
+
+[node name="HeaderRight" type="MarginContainer" parent="Root/Header/HeaderRow"]
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="HeaderLinks" type="Label" parent="Root/Header/HeaderRow/HeaderRight"]
+text = "STOCK  ·  PROFIL"
+horizontal_alignment = 2
+vertical_alignment = 1
+
+[node name="Body" type="HBoxContainer" parent="Root"]
+size_flags_vertical = 3
+theme_override_constants/separation = 0
+
+[node name="Sidebar" type="PanelContainer" parent="Root/Body"]
+custom_minimum_size = Vector2(170, 0)
+
+[node name="SideMargin" type="MarginContainer" parent="Root/Body/Sidebar"]
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="SideCol" type="VBoxContainer" parent="Root/Body/Sidebar/SideMargin"]
+theme_override_constants/separation = 4
+
+[node name="ContentWrapper" type="PanelContainer" parent="Root/Body"]
+size_flags_horizontal = 3
+
+[node name="ContentCol" type="VBoxContainer" parent="Root/Body/ContentWrapper"]
+theme_override_constants/separation = 0
+
+[node name="ContentScroll" type="ScrollContainer" parent="Root/Body/ContentWrapper/ContentCol"]
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="ContentBody" type="VBoxContainer" parent="Root/Body/ContentWrapper/ContentCol/ContentScroll"]
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="DetailPanel" type="PanelContainer" parent="Root/Body"]
+custom_minimum_size = Vector2(260, 0)
+
+[node name="DetailMargin" type="MarginContainer" parent="Root/Body/DetailPanel"]
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="DetailCol" type="VBoxContainer" parent="Root/Body/DetailPanel/DetailMargin"]
+theme_override_constants/separation = 10
+
+[node name="DetailTitle" type="Label" parent="Root/Body/DetailPanel/DetailMargin/DetailCol"]
+autowrap_mode = 3
+
+[node name="DetailBody" type="VBoxContainer" parent="Root/Body/DetailPanel/DetailMargin/DetailCol"]
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Footer" type="PanelContainer" parent="Root"]
+
+[node name="FooterRow" type="HBoxContainer" parent="Root/Footer"]
+theme_override_constants/separation = 16
+
+[node name="FooterLeft" type="MarginContainer" parent="Root/Footer/FooterRow"]
+size_flags_horizontal = 3
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="FooterCrumb" type="Label" parent="Root/Footer/FooterRow/FooterLeft"]
+vertical_alignment = 1
+
+[node name="FooterRight" type="MarginContainer" parent="Root/Footer/FooterRow"]
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="FooterBtn" type="Button" parent="Root/Footer/FooterRow/FooterRight"]
+custom_minimum_size = Vector2(240, 48)
+focus_mode = 0

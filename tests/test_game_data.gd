@@ -229,3 +229,40 @@ func test_evolutions_orientation_valid() -> bool:
 			push_error("RUN_EVOLUTIONS[%s].orientation invalide : '%s'" % [id, ori])
 			return false
 	return true
+
+
+func test_skills_total_count() -> bool:
+	if GameData.SKILLS.size() != 240:
+		push_error("SKILLS devrait avoir 240 nœuds, en a %d" % GameData.SKILLS.size())
+		return false
+	return true
+
+
+func test_skills_sixty_per_tree() -> bool:
+	var counts: Dictionary = {}
+	for id in GameData.SKILLS:
+		var tab: String = String(GameData.SKILLS[id].get("tab", ""))
+		counts[tab] = int(counts.get(tab, 0)) + 1
+	for tree in ["navigation", "logistique", "armement", "minage"]:
+		if int(counts.get(tree, 0)) != 60:
+			push_error("Arbre '%s' a %d nœuds (attendu 60)" % [tree, counts.get(tree, 0)])
+			return false
+	return true
+
+
+func test_skill_evo_unlocks_reference_valid_evolutions() -> bool:
+	for id in GameData.SKILLS:
+		var evo_id: String = String(GameData.SKILLS[id].get("unlocks_evo", ""))
+		if evo_id != "" and not GameData.RUN_EVOLUTIONS.has(evo_id):
+			push_error("SKILLS[%s].unlocks_evo='%s' absent de RUN_EVOLUTIONS" % [id, evo_id])
+			return false
+	return true
+
+
+func test_skill_ship_unlocks_reference_valid_ships() -> bool:
+	for id in GameData.SKILLS:
+		var ship_id: String = String(GameData.SKILLS[id].get("unlocks_ship", ""))
+		if ship_id != "" and not GameData.SHIPS.has(ship_id):
+			push_error("SKILLS[%s].unlocks_ship='%s' absent de SHIPS" % [id, ship_id])
+			return false
+	return true
