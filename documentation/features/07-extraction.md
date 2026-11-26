@@ -1,31 +1,43 @@
 # Extraction et échec
 
 ## Statut et objectif
-**Socle validé / à préserver :** Extraction volontaire partout après mission ; immobilité ; mort perd le butin sauf récupération Logistique.
+**Implémenté et validé.** Extraction volontaire partout après mission ; mort perd le butin sauf récupération Logistique.
 
-Les composants, champs et algorithmes ci-dessous sont des propositions techniques, pas des noms de classes existantes vérifiés. Voir ../GDD_V5.md et ../CONTENT.md.
+## Fonctionnement actuel (implémenté dans `scenes/sector/sector.gd`)
 
-## Fonctionnement proposé
-Vérifier éligibilité, démarrer canalisation, annuler si déplacement, finaliser transaction.
+### Démarrage
+- Disponible uniquement une fois la mission accomplie (`RunState.mission_complete`)
+- Déclenché par TAB (`action "extract"`)
+- **Pas besoin d'être immobile** pour démarrer
 
-## Exemple concret
-10 s proposées ; déplacement à 9 s remet compteur à zéro.
+### Déroulement
+- Canalisation de 10 secondes (configurable via `GameData.CONFIG["extract_time"]`)
+- Réduite par la compétence `extract_boost` : `× maxf(0.3, 1.0 - 0.15 × rang)`
+- Anneau de progression affiché autour du vaisseau (arc vert)
+- Message "Extraction en cours… (TAB pour annuler)"
 
-## Contrat technique proposé
-- Responsabilités : `ExtractionController, RunSettlement`.
-- Données à modéliser : `channel_elapsed, result, settlement_id`.
-- Séparer les définitions statiques (Resources Godot) de l’état mutable de la run.
-- Utiliser des identifiants stables, valider les références au chargement et sérialiser les données plutôt que les références de Node.
-- Émettre un signal métier après changement effectif ; l’interface observe l’état sans en être propriétaire.
+### Annulation
+- **TAB à nouveau** → annulation manuelle
+- **Dégâts reçus** → annulation automatique ("Extraction interrompue par les dégâts !")
+- **Dash** → annulation automatique
+- Compteur remis à zéro ; nouvelle tentative possible immédiatement
 
-## Critères d’acceptation et cas limites
-Mort pendant canalisation, double clic, reprise et arrondis de récupération à tester.
+### Finalisation
+- Signal `cleared` émis → `main.gd` termine la run et affiche le bilan
+- Bilan distingue succès (tout le cargo sécurisé) d'un échec (cargo partiel)
 
-## Scénarios de test
-1. Initialiser une partie ou un profil minimal avec des données déterministes ; exécuter le scénario nominal décrit ci-dessus.
-2. Répéter avec les conditions limites décrites ; vérifier que l’état et les quantités restent cohérents.
-3. Vérifier l’intégration avec sauvegarde/reprise lorsque la fonctionnalité appartient à la run, ou avec persistance du profil sinon.
-4. Vérifier l’affichage et les retours utilisateur, puis effectuer un test en expédition réelle.
+### Échec (mort)
+- `RunState.damage()` → hull ≤ 0 → signal `run_failed`
+- Cargo perdu sauf portion sauvegardée par compétence `insure` (+12 % par rang, max 3 rangs = 36 %)
 
-## Paramètres et arbitrages
-Les valeurs d’exemple ne sont pas des constantes définitives. Exposer les paramètres pertinents dans les données ; mesurer avant de figer. Ne pas ajouter de mécanique hors GDD sans validation.
+## Paramètres configurables
+| Paramètre | Clé | Valeur actuelle |
+|---|---|---|
+| Durée de base | `CONFIG["extract_time"]` | 10 s |
+| Réduction max | compétence `extract_boost` | −45 % (3 rangs) |
+| Récupération mort | compétence `insure` | +36 % max |
+
+## Cas limites validés
+- Double pression TAB (démarrage + annulation) : corrigé par `elif _extracting`
+- Dégâts pendant extraction : annule via `_on_ship_damaged()`
+- Extraction après reprise de sauvegarde : fonctionne (état `_extracting` = false par défaut)

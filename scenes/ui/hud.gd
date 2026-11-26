@@ -10,6 +10,7 @@ const GREEN  := Color("8fd35f")
 
 var _status_label:   Label
 var _hull_bar:       ProgressBar
+var _hull_fill:      StyleBoxFlat
 var _threat_label:   Label
 var _cargo_label:    Label
 var _xp_bar:         ProgressBar
@@ -48,7 +49,11 @@ func _ready() -> void:
 	hull_lbl.text = "Coque"
 	_style_label(hull_lbl, 13, MUTED)
 	hull_box.add_child(hull_lbl)
-	_hull_bar = _bar(GREEN, Vector2(110, 14))
+	_hull_bar = _bar(GREEN, Vector2(120, 16))
+	_hull_fill = StyleBoxFlat.new()
+	_hull_fill.set_corner_radius_all(6)
+	_hull_fill.bg_color = GREEN
+	_hull_bar.add_theme_stylebox_override("fill", _hull_fill)
 	hull_box.add_child(_hull_bar)
 
 	_threat_label = _chip(top)
@@ -146,8 +151,13 @@ func _process(delta: float) -> void:
 
 	_hull_bar.max_value = RunState.max_hull
 	_hull_bar.value     = RunState.hull
+	var hull_ratio := RunState.hull / maxf(RunState.max_hull, 0.001)
+	_hull_fill.bg_color = Color(0.9, 0.2, 0.1).lerp(Color(0.3, 0.85, 0.35), hull_ratio)
 
-	_threat_label.text = "Menace %d" % RunState.threat_level()
+	var threat_lvl := RunState.threat_level()
+	_threat_label.text = "Menace %d" % threat_lvl
+	var threat_colors := [GREEN, GREEN, Color("ffe040"), Color("ff8020"), Color("ff3030"), Color("cc44ff")]
+	_threat_label.add_theme_color_override("font_color", threat_colors[clampi(threat_lvl, 0, 5)])
 
 	_cargo_label.text = "Cargo : %s" % RunState.cargo_text()
 
