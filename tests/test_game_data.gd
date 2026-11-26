@@ -259,6 +259,22 @@ func test_skill_evo_unlocks_reference_valid_evolutions() -> bool:
 	return true
 
 
+func test_modules_count() -> bool:
+	if GameData.MODULES.size() != 16:
+		push_error("MODULES devrait avoir 16 entrées, en a %d" % GameData.MODULES.size())
+		return false
+	return true
+
+
+func test_modules_have_all_fields() -> bool:
+	for id in GameData.MODULES:
+		for field in ["name", "desc"]:
+			if not GameData.MODULES[id].has(field):
+				push_error("MODULES[%s] manque le champ : %s" % [id, field])
+				return false
+	return true
+
+
 func test_skill_ship_unlocks_reference_valid_ships() -> bool:
 	for id in GameData.SKILLS:
 		var ship_id: String = String(GameData.SKILLS[id].get("unlocks_ship", ""))

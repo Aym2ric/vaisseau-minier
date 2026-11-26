@@ -36,7 +36,7 @@ func _exit_tree() -> void:
 func update_weapon(delta: float, firing: bool) -> void:
 	var stats: Dictionary = GameData.WEAPONS["laser"]
 	var evo_top := RunState.run_evolution
-	var heat_rate := float(stats["heat_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate"))
+	var heat_rate := float(stats["heat_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate")) * SaveGame.module_rate_mult()
 	if evo_top == "laser_sustained": heat_rate *= 1.3
 	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("laser_cool")) * (1.0 + 0.08 * SaveGame.skill("fire_rate_perm"))
 	if firing and not overheated:
@@ -77,17 +77,17 @@ func update_weapon(delta: float, firing: bool) -> void:
 					"laser_deep":      mine_evo = 2.0
 					"laser_sustained": mine_evo = 1.3
 					"laser_prism":     mine_evo = 1.2
-				hit_dmg = float(stats["mining_damage"]) * mine_mult * mine_evo * RunState.ship_mining_mult * delta
+				hit_dmg = float(stats["mining_damage"]) * mine_mult * mine_evo * RunState.ship_mining_mult * SaveGame.module_mine_mult() * delta
 			else:
 				var dmg_evo := 1.0
-			match evo:
-				"laser_overload":  dmg_evo = 1.75
-				"laser_focused":   dmg_evo = 1.5
-				"laser_cutter":    dmg_evo = 0.5
-				"laser_deep":      dmg_evo = 0.6
-				"laser_sustained": dmg_evo = 1.3
-				"laser_prism":     dmg_evo = 1.2
-				hit_dmg = float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * RunState.ship_combat_mult * delta
+				match evo:
+					"laser_overload":  dmg_evo = 1.75
+					"laser_focused":   dmg_evo = 1.5
+					"laser_cutter":    dmg_evo = 0.5
+					"laser_deep":      dmg_evo = 0.6
+					"laser_sustained": dmg_evo = 1.3
+					"laser_prism":     dmg_evo = 1.2
+				hit_dmg = float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * RunState.ship_combat_mult * SaveGame.module_dmg_mult() * delta
 			col.take_hit(hit_dmg)
 
 		var core_color := Color("5bdfff").lerp(Color("ff5a5f"), heat)

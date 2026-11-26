@@ -409,10 +409,24 @@ func _show_hangar() -> void:
 	# Capacité (dash seulement)
 	col.add_child(_slot_row("Capacité", "Esquive (Dash)", false))
 
-	# Modules (verrouillés)
+	# Modules
+	var slots := SaveGame.slot_count()
+	var equipped_mods: Array = (SaveGame.data.get("equipped", {}) as Dictionary).get("modules", [])
 	for i in 4:
-		var mod_slots := SaveGame.skill("magnet")  # placeholder: nb modules débloqués
-		col.add_child(_slot_row("Module %d" % (i + 1), "Verrouillé", false, i < mod_slots))
+		if i >= slots:
+			col.add_child(_slot_row("Module %d" % (i + 1), "Verrouillé", false, false))
+		else:
+			var mod_id: String = equipped_mods[i] if i < equipped_mods.size() else ""
+			var mod_label: String = String(GameData.MODULES[mod_id]["name"]) if mod_id != "" else "Vide — cliquer pour équiper"
+			var row := _slot_row("Module %d" % (i + 1), mod_label, true)
+			(row as PanelContainer).add_theme_stylebox_override("panel",
+				_flat(BG_SEL if mod_id != "" else BG_ITEM, 6, CYAN if mod_id != "" else BORDER))
+			var cap_i: int = i
+			(row as PanelContainer).gui_input.connect(func(event: InputEvent) -> void:
+				if event is InputEventMouseButton and (event as InputEventMouseButton).pressed:
+					_show_module_slot(cap_i)
+			)
+			col.add_child(row)
 
 	# Statistiques dans le détail
 	_refresh_hangar_detail()
@@ -472,6 +486,50 @@ func _refresh_hangar_detail() -> void:
 		var cd := float(wdef.get("cooldown", 1.0))
 		_detail_row("Cadence", "%.2f s" % cd if cd > 0.0 else "Continu")
 	_detail_row("Description", String(sdef["desc"]))
+
+func _show_module_slot(slot_idx: int) -> void:
+	_clear_detail()
+	var equipped_mods: Array = (SaveGame.data.get("equipped", {}) as Dictionary).get("modules", [])
+	var current_id: String = equipped_mods[slot_idx] if slot_idx < equipped_mods.size() else ""
+
+	_detail_title.text = "Emplacement Module %d" % (slot_idx + 1)
+
+	if current_id != "":
+		var mdef: Dictionary = GameData.MODULES[current_id]
+		_detail_row("Équipé", String(mdef["name"]))
+		_detail_row("Effet", String(mdef["desc"]))
+		var unequip_btn := _action_btn("RETIRER", RED_ERR)
+		unequip_btn.pressed.connect(func() -> void:
+			SaveGame.unequip_module(current_id)
+			_switch_section("hangar")
+		)
+		_detail_body.add_child(unequip_btn)
+	else:
+		_detail_row("Statut", "Aucun module équipé")
+
+	var sep := HSeparator.new()
+	sep.add_theme_constant_override("separation", 12)
+	_detail_body.add_child(sep)
+
+	var lbl := Label.new()
+	lbl.text = "MODULES DISPONIBLES"
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", MUTED)
+	_detail_body.add_child(lbl)
+
+	for mod_id in GameData.MODULES:
+		if mod_id in equipped_mods:
+			continue
+		var mdef: Dictionary = GameData.MODULES[mod_id]
+		var btn := _action_btn(String(mdef["name"]), CYAN.darkened(0.5))
+		var cap_id: String = mod_id
+		btn.tooltip_text = String(mdef["desc"])
+		btn.pressed.connect(func() -> void:
+			SaveGame.equip_module(cap_id)
+			_switch_section("hangar")
+		)
+		_detail_body.add_child(btn)
+
 
 # ==================================================================
 # SECTION : RECHERCHE

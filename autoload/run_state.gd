@@ -54,6 +54,8 @@ func start_run(id: String, diff: int = 1) -> void:
 	ship_combat_mult = float(sdef["combat_mult"])
 	ship_mining_mult = float(sdef["mining_mult"])
 	max_hull     = float(sdef["hull"]) + 15.0 * SaveGame.skill("hull")
+	if SaveGame.module_active("generateur_bouclier"):
+		max_hull += 15.0
 	hull         = max_hull
 	cargo        = {}
 	threat       = 0.0
@@ -83,6 +85,8 @@ func tick(delta: float, threat_mult: float = 1.0) -> void:
 	threat += delta * float(GameData.CONFIG["threat_rate"]) * threat_mult * slow
 	if active and SaveGame.skill("repair_nano") > 0:
 		heal(0.5 * SaveGame.skill("repair_nano") * delta)
+	if active and SaveGame.module_active("nanorobots"):
+		heal(0.3 * delta)
 
 
 func threat_level() -> int:
@@ -127,7 +131,8 @@ func heal(amount: float) -> void:
 func damage(amount: float) -> void:
 	if not active:
 		return
-	hull = max(0.0, hull - amount)
+	var actual := amount * (0.85 if SaveGame.module_active("blindage_renforce") else 1.0)
+	hull = max(0.0, hull - actual)
 	hull_changed.emit(hull, max_hull)
 	if hull <= 0.0:
 		active = false

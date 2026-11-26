@@ -192,6 +192,67 @@ func test_buy_skill_unlocks_ship() -> bool:
 	return result and unlocked
 
 
+func test_slot_count_starts_at_one() -> bool:
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	SaveGame.data["skills"] = {}
+	var result := SaveGame.slot_count() == 1
+	SaveGame.data["skills"] = old_skills
+	return result
+
+
+func test_module_active_false_by_default() -> bool:
+	var old_eq: Dictionary = SaveGame.data["equipped"].duplicate()
+	SaveGame.data["equipped"] = {"weapon": "blaster", "modules": []}
+	var result := not SaveGame.module_active("aimant")
+	SaveGame.data["equipped"] = old_eq
+	return result
+
+
+func test_equip_module_basic() -> bool:
+	var old_eq: Dictionary = SaveGame.data["equipped"].duplicate(true)
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	SaveGame.data["skills"] = {}
+	SaveGame.data["equipped"] = {"weapon": "blaster", "modules": []}
+	var result := SaveGame.equip_module("aimant") and SaveGame.module_active("aimant")
+	SaveGame.data["equipped"] = old_eq
+	SaveGame.data["skills"] = old_skills
+	return result
+
+
+func test_equip_module_no_duplicate() -> bool:
+	var old_eq: Dictionary = SaveGame.data["equipped"].duplicate(true)
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	SaveGame.data["skills"] = {}
+	SaveGame.data["equipped"] = {"weapon": "blaster", "modules": ["aimant"]}
+	var result := not SaveGame.equip_module("aimant")
+	SaveGame.data["equipped"] = old_eq
+	SaveGame.data["skills"] = old_skills
+	return result
+
+
+func test_equip_module_slot_limit() -> bool:
+	var old_eq: Dictionary = SaveGame.data["equipped"].duplicate(true)
+	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
+	SaveGame.data["skills"] = {}  # slot_count = 1
+	SaveGame.data["equipped"] = {"weapon": "blaster", "modules": ["aimant"]}
+	var result := not SaveGame.equip_module("amplificateur")
+	SaveGame.data["equipped"] = old_eq
+	SaveGame.data["skills"] = old_skills
+	return result
+
+
+func test_unequip_module() -> bool:
+	var old_eq: Dictionary = SaveGame.data["equipped"].duplicate(true)
+	SaveGame.data["equipped"] = {"weapon": "blaster", "modules": ["aimant"]}
+	var result := SaveGame.unequip_module("aimant") and not SaveGame.module_active("aimant")
+	SaveGame.data["equipped"] = old_eq
+	return result
+
+
+func test_equip_module_unknown_returns_false() -> bool:
+	return not SaveGame.equip_module("module_inconnu_xyz")
+
+
 func test_buy_skill_unlocks_evo() -> bool:
 	var old_skills: Dictionary = SaveGame.data["skills"].duplicate()
 	var old_inv: Dictionary = SaveGame.data["inventory"].duplicate()

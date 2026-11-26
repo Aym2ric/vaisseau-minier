@@ -18,7 +18,7 @@ func default_data() -> Dictionary:
 		"boss_killed": {},
 		"found": {"fer": true},
 		"weapons": {"blaster": true},
-		"equipped": {"weapon": "blaster"},
+		"equipped": {"weapon": "blaster", "modules": []},
 		"selected_ship": "polyvalent",
 		"ships_unlocked": {"polyvalent": true},
 		"evos_unlocked": {},
@@ -48,6 +48,10 @@ func load_game() -> void:
 		data["equipped"] = {"weapon": String(data["equipped"])}
 	# Migration : suppression de l'ancien champ "credits"
 	data.erase("credits")
+	# Migration : ajouter modules: [] si absent de equipped
+	var eq: Dictionary = data["equipped"]
+	if not eq.has("modules"):
+		eq["modules"] = []
 
 
 func save_game() -> void:
@@ -80,6 +84,53 @@ func ship_unlocked(id: String) -> bool:
 func evo_unlocked(id: String) -> bool:
 	var evos: Dictionary = data.get("evos_unlocked", {})
 	return bool(evos.get(id, false))
+
+
+func slot_count() -> int:
+	return 1 + mini(skill("module_slot_1") + skill("module_slot_2") + skill("module_slot_3"), 3)
+
+
+func module_active(id: String) -> bool:
+	var modules: Array = (data.get("equipped", {}) as Dictionary).get("modules", [])
+	return id in modules
+
+
+func equip_module(id: String) -> bool:
+	if not GameData.MODULES.has(id):
+		return false
+	var equipped: Dictionary = data["equipped"]
+	var modules: Array = equipped.get("modules", [])
+	if id in modules:
+		return false
+	if modules.size() >= slot_count():
+		return false
+	modules.append(id)
+	equipped["modules"] = modules
+	save_game()
+	return true
+
+
+func unequip_module(id: String) -> bool:
+	var equipped: Dictionary = data["equipped"]
+	var modules: Array = equipped.get("modules", [])
+	if id not in modules:
+		return false
+	modules.erase(id)
+	equipped["modules"] = modules
+	save_game()
+	return true
+
+
+func module_dmg_mult() -> float:
+	return 1.2 if module_active("amplificateur") else 1.0
+
+
+func module_rate_mult() -> float:
+	return 0.8 if module_active("accelerateur") else 1.0
+
+
+func module_mine_mult() -> float:
+	return 1.25 if module_active("optimiseur_minier") else 1.0
 
 
 func skill(id: String) -> int:

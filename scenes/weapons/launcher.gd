@@ -15,7 +15,7 @@ func update_weapon(delta: float, firing: bool) -> void:
 		return
 	var stats: Dictionary = GameData.WEAPONS["launcher"]
 	var evo := RunState.run_evolution
-	cooldown = float(stats["cooldown"]) * maxf(0.3, 1.0 - 0.2 * RunState.run_upgrade_level("rate") - 0.08 * SaveGame.skill("fire_rate_perm"))
+	cooldown = float(stats["cooldown"]) * maxf(0.3, 1.0 - 0.2 * RunState.run_upgrade_level("rate") - 0.08 * SaveGame.skill("fire_rate_perm")) * SaveGame.module_rate_mult()
 	var dmg_evo := 1.0
 	match evo:
 		"launcher_swarm":   dmg_evo = 0.6
@@ -29,8 +29,8 @@ func update_weapon(delta: float, firing: bool) -> void:
 		"launcher_cluster": mine_evo = 2.0
 		"launcher_napalm":  mine_evo = 1.2
 		"launcher_salvo":   mine_evo = 0.9
-	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("launcher_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
-	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine")) * mine_evo
+	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("launcher_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * SaveGame.module_dmg_mult()
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine")) * mine_evo * SaveGame.module_mine_mult()
 	var extra := 2 if evo == "launcher_swarm" else (1 if evo in ["launcher_cluster", "launcher_salvo"] else 0)
 	var count := 1 + RunState.run_upgrade_level("multi") + extra
 	var radius_mult := 1.0

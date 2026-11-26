@@ -53,7 +53,8 @@ func _physics_process(delta: float) -> void:
 	var max_speed: float = float(sdef["speed"]) \
 		* (1.0 + 0.08 * SaveGame.skill("thrust")) \
 		* (1.0 + 0.12 * SaveGame.skill("sprint_boost")) \
-		* (1.0 + 0.15 * RunState.run_upgrade_level("speed"))
+		* (1.0 + 0.15 * RunState.run_upgrade_level("speed")) \
+		* (1.15 if SaveGame.module_active("propulseur_auxiliaire") else 1.0)
 	var move := Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var aim  := Input.get_vector("aim_left", "aim_right", "aim_up", "aim_down")
 	thrusting = false
@@ -133,9 +134,6 @@ func _nearest_target() -> Vector2:
 		var col: Node2D = result["collider"]
 		if not is_instance_valid(col):
 			continue
-		# Exclure les murs friables (rock/hard) — cibler seulement ennemis + gisements minables
-		if col is Rock and not (col as Rock).is_mineable():
-			continue
 		var d := global_position.distance_to(col.global_position)
 		if d < nearest_dist:
 			nearest_dist = d
@@ -151,7 +149,7 @@ func _try_dash() -> void:
 	velocity     = dir * dash_vel
 	invulnerable = maxf(invulnerable, 0.3 + 0.1 * SaveGame.skill("dash_invuln"))
 	dash_time    = 0.2
-	dash_cooldown = float(GameData.CONFIG["dash_cooldown"]) * maxf(0.3, 1.0 - 0.15 * SaveGame.skill("dash_cooldown_skill"))
+	dash_cooldown = float(GameData.CONFIG["dash_cooldown"]) * maxf(0.3, 1.0 - 0.15 * SaveGame.skill("dash_cooldown_skill") - 0.20 * (1.0 if SaveGame.module_active("condensateur") else 0.0))
 
 
 func take_damage(amount: float) -> void:

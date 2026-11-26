@@ -16,7 +16,7 @@ func update_weapon(delta: float, firing: bool) -> void:
 		"blaster_heavy":   cooldown_mult *= 2.0
 		"blaster_gatling": cooldown_mult *= 0.5
 		"blaster_burst":   cooldown_mult *= 1.5
-	cooldown = float(stats["cooldown"]) * cooldown_mult
+	cooldown = float(stats["cooldown"]) * cooldown_mult * SaveGame.module_rate_mult()
 	var count := 1 + SaveGame.skill("blaster_multi") + RunState.run_upgrade_level("multi")
 	match evo:
 		"blaster_drill":   count += 1
@@ -35,9 +35,9 @@ func update_weapon(delta: float, firing: bool) -> void:
 		"blaster_drill":     mine_evo = 2.0
 		"blaster_scatter":   mine_evo = 0.75
 		"blaster_burst":     mine_evo = 1.3
-	var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("blaster_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * RunState.ship_combat_mult
+	var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("blaster_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * RunState.ship_combat_mult * SaveGame.module_dmg_mult()
 	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
-	var mining_dmg := float(stats["mining_damage"]) * mine_mult * mine_evo * RunState.ship_mining_mult
+	var mining_dmg := float(stats["mining_damage"]) * mine_mult * mine_evo * RunState.ship_mining_mult * SaveGame.module_mine_mult()
 	var spread := 0.12
 	if evo == "blaster_scatter": spread = 0.22
 	for i in count:

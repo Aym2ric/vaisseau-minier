@@ -239,6 +239,26 @@ const RUN_UPGRADES := {
 	"mine":   {"name": "Forage intensif",      "desc": "+40 % de vitesse de minage."},
 }
 
+## 16 modules passifs équipables dans les emplacements débloqués via Logistique.
+const MODULES: Dictionary = {
+	"aimant":                      {"name": "Aimant",                      "desc": "+30 % rayon de ramassage."},
+	"scanner":                     {"name": "Scanner",                     "desc": "Révèle les ressources et POI hors écran."},
+	"optimiseur_minier":           {"name": "Optimiseur minier",           "desc": "+25 % dégâts de minage."},
+	"drone_collecteur":            {"name": "Drone collecteur",            "desc": "Collecte automatiquement les pickups proches."},
+	"generateur_bouclier":         {"name": "Générateur de bouclier",      "desc": "+15 PV maximum au début de chaque run."},
+	"blindage_renforce":           {"name": "Blindage renforcé",           "desc": "-15 % dégâts reçus."},
+	"nanorobots":                  {"name": "Nanorobots",                  "desc": "Régénère 0,3 PV/s en run."},
+	"champ_repulsif":              {"name": "Champ répulsif",              "desc": "Repousse les ennemis au contact."},
+	"drone_offensif":              {"name": "Drone offensif",              "desc": "Drone de combat qui attaque les ennemis proches."},
+	"amplificateur":               {"name": "Amplificateur",               "desc": "+20 % dégâts de combat."},
+	"accelerateur":                {"name": "Accélérateur",                "desc": "+20 % cadence de tir."},
+	"systeme_ciblage":             {"name": "Système de ciblage",          "desc": "+10 % chance de coup critique."},
+	"propulseur_auxiliaire":       {"name": "Propulseur auxiliaire",       "desc": "+15 % vitesse de déplacement."},
+	"stabilisateur":               {"name": "Stabilisateur",               "desc": "Réduit la friction de 30 %."},
+	"protection_environnementale": {"name": "Protection environnementale", "desc": "-50 % effets environnementaux."},
+	"condensateur":                {"name": "Condensateur",                "desc": "-20 % temps de recharge de l'esquive."},
+}
+
 ## Compétences permanentes — débloquées en dépensant des ressources dans les 4 arbres.
 const SKILLS := {
 	# ============================================================

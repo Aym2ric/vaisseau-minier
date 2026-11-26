@@ -12,7 +12,7 @@ var _time := 0.0
 func update_weapon(delta: float, firing: bool) -> void:
 	_time += delta
 	var stats: Dictionary = GameData.WEAPONS["flame"]
-	var fuel_rate := float(stats["fuel_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate"))
+	var fuel_rate := float(stats["fuel_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate")) * SaveGame.module_rate_mult()
 	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("flame_fuel")) * (1.0 + 0.08 * SaveGame.skill("fire_rate_perm"))
 
 	var evo := RunState.run_evolution
@@ -71,8 +71,8 @@ func _apply_damage(delta: float, stats: Dictionary) -> void:
 		"flame_wide":    mine_evo = 2.0
 		"flame_torrent": mine_evo = 1.3
 		"flame_inferno": mine_evo = 1.3
-	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("flame_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
-	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine")) * mine_evo
+	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("flame_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * SaveGame.module_dmg_mult()
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine")) * mine_evo * SaveGame.module_mine_mult()
 
 	for result in space.intersect_shape(q, 16):
 		var col: Node2D = result["collider"]

@@ -41,8 +41,7 @@ func _physics_process(delta: float) -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.has_method("take_hit"):
-		var hit_dmg := mining_damage if (area is Rock and (area as Rock).is_mineable()) else damage
-		area.take_hit(hit_dmg)
+		area.take_hit(damage)
 	_explode(area)
 
 
