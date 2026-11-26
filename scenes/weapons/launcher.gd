@@ -16,12 +16,29 @@ func update_weapon(delta: float, firing: bool) -> void:
 	var stats: Dictionary = GameData.WEAPONS["launcher"]
 	var evo := RunState.run_evolution
 	cooldown = float(stats["cooldown"]) * maxf(0.3, 1.0 - 0.2 * RunState.run_upgrade_level("rate") - 0.08 * SaveGame.skill("fire_rate_perm"))
-	var dmg_evo := 0.6 if evo == "launcher_swarm" else (2.0 if evo == "launcher_heavy" else 1.0)
+	var dmg_evo := 1.0
+	match evo:
+		"launcher_swarm":   dmg_evo = 0.6
+		"launcher_heavy":   dmg_evo = 2.0
+		"launcher_bore":    dmg_evo = 0.5
+		"launcher_napalm":  dmg_evo = 1.2
+		"launcher_salvo":   dmg_evo = 0.9
+	var mine_evo := 1.0
+	match evo:
+		"launcher_bore":    mine_evo = 2.5
+		"launcher_cluster": mine_evo = 2.0
+		"launcher_napalm":  mine_evo = 1.2
+		"launcher_salvo":   mine_evo = 0.9
 	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("launcher_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
-	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
-	var extra := 2 if evo == "launcher_swarm" else 0
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine")) * mine_evo
+	var extra := 2 if evo == "launcher_swarm" else (1 if evo in ["launcher_cluster", "launcher_salvo"] else 0)
 	var count := 1 + RunState.run_upgrade_level("multi") + extra
-	var radius_mult := 1.5 if evo == "launcher_heavy" else 1.0
+	var radius_mult := 1.0
+	match evo:
+		"launcher_heavy":   radius_mult = 1.5
+		"launcher_bore":    radius_mult = 0.7
+		"launcher_cluster": radius_mult = 0.7
+		"launcher_napalm":  radius_mult = 1.3
 	for i in count:
 		var angle_offset := (i - (count - 1) / 2.0) * 0.18
 		var rocket: Rocket = _rocket_scene.instantiate()

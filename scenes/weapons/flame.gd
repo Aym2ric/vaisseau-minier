@@ -16,7 +16,10 @@ func update_weapon(delta: float, firing: bool) -> void:
 	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("flame_fuel")) * (1.0 + 0.08 * SaveGame.skill("fire_rate_perm"))
 
 	var evo := RunState.run_evolution
-	var fuel_mult := 1.5 if evo == "flame_furnace" else 1.0
+	var fuel_mult := 1.0
+	match evo:
+		"flame_furnace": fuel_mult = 1.5
+		"flame_inferno": fuel_mult = 1.4
 	if firing and not overheated:
 		heat = minf(1.0, heat + fuel_rate * fuel_mult * delta)
 		if heat >= 1.0:
@@ -34,8 +37,14 @@ func update_weapon(delta: float, firing: bool) -> void:
 
 func _apply_damage(delta: float, stats: Dictionary) -> void:
 	var evo := RunState.run_evolution
-	var range_val := float(stats["range"]) * (1.6 if evo == "flame_range" else 1.0)
-	var half_angle := deg_to_rad(float(stats["angle"]) / 2.0)
+	var range_mult_f := 1.0
+	match evo:
+		"flame_range":    range_mult_f = 1.6
+		"flame_acid":     range_mult_f = 0.8
+		"flame_torrent":  range_mult_f = 1.2
+	var range_val := float(stats["range"]) * range_mult_f
+	var angle_mult := 1.5 if evo == "flame_wide" else 1.0
+	var half_angle := deg_to_rad(float(stats["angle"]) / 2.0 * angle_mult)
 	var origin := muzzle()
 	var dir := Vector2.RIGHT.rotated(ship.rotation)
 
@@ -50,9 +59,20 @@ func _apply_damage(delta: float, stats: Dictionary) -> void:
 	q.collide_with_bodies = true
 
 	var base_dmg := float(stats["damage"])
-	var dmg_evo := 1.75 if evo == "flame_furnace" else 1.0
+	var dmg_evo := 1.0
+	match evo:
+		"flame_furnace": dmg_evo = 1.75
+		"flame_acid":    dmg_evo = 0.5
+		"flame_torrent": dmg_evo = 1.3
+		"flame_inferno": dmg_evo = 1.5
+	var mine_evo := 1.0
+	match evo:
+		"flame_acid":    mine_evo = 2.5
+		"flame_wide":    mine_evo = 2.0
+		"flame_torrent": mine_evo = 1.3
+		"flame_inferno": mine_evo = 1.3
 	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("flame_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
-	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine")) * mine_evo
 
 	for result in space.intersect_shape(q, 16):
 		var col: Node2D = result["collider"]

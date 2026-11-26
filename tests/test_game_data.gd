@@ -3,7 +3,7 @@
 extends RefCounted
 
 const REQUIRED_ELITE      := ["name", "hp_mult", "speed_mult", "dmg_mult", "xp_mult", "color"]
-const REQUIRED_EVOLUTION  := ["name", "desc", "weapon", "icon"]
+const REQUIRED_EVOLUTION  := ["name", "desc", "weapon", "icon", "orientation"]
 
 const REQUIRED_CONFIG := [
 	"hull", "ship_speed", "ship_accel",
@@ -206,4 +206,26 @@ func test_ships_count() -> bool:
 	if GameData.SHIPS.size() != 6:
 		push_error("SHIPS devrait avoir 6 entrées, en a %d" % GameData.SHIPS.size())
 		return false
+	return true
+
+
+func test_evolutions_six_per_weapon() -> bool:
+	var counts: Dictionary = {}
+	for id in GameData.RUN_EVOLUTIONS:
+		var weapon: String = String(GameData.RUN_EVOLUTIONS[id]["weapon"])
+		counts[weapon] = int(counts.get(weapon, 0)) + 1
+	for weapon in counts:
+		if int(counts[weapon]) != 6:
+			push_error("RUN_EVOLUTIONS: %s a %d évolutions (attendu 6)" % [weapon, counts[weapon]])
+			return false
+	return true
+
+
+func test_evolutions_orientation_valid() -> bool:
+	var valid := ["offensive", "miniere", "hybride"]
+	for id in GameData.RUN_EVOLUTIONS:
+		var ori: String = String(GameData.RUN_EVOLUTIONS[id].get("orientation", ""))
+		if ori not in valid:
+			push_error("RUN_EVOLUTIONS[%s].orientation invalide : '%s'" % [id, ori])
+			return false
 	return true

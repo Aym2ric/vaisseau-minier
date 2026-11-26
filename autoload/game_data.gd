@@ -193,20 +193,37 @@ const SHIPS := {
 ## Nombre d'upgrades arme (rate/multi/dmg) pour déclencher une évolution.
 const EVOLUTION_THRESHOLD := 3
 
-## Évolutions d'arme disponibles en run (déclenchées au seuil).
+## Évolutions d'arme disponibles en run. 6 par arme : 2 offensives, 2 minières, 2 hybrides.
+## orientation : "offensive" | "miniere" | "hybride"
 const RUN_EVOLUTIONS := {
-	# Blaster
-	"blaster_heavy":    {"name": "Canon lourd",    "desc": "Dégâts ×2, cadence ÷2.",            "weapon": "blaster",  "icon": "◆"},
-	"blaster_gatling":  {"name": "Gatling",         "desc": "Cadence ×2, dégâts −30 %.",         "weapon": "blaster",  "icon": "⚙"},
-	# Laser
-	"laser_overload":   {"name": "Surcharge",       "desc": "Dégâts +75 %, chauffe ×1,5.",       "weapon": "laser",    "icon": "◆"},
-	"laser_focused":    {"name": "Focalisation",    "desc": "Dégâts +50 %, portée +30 %.",       "weapon": "laser",    "icon": "▶"},
-	# Launcher
-	"launcher_swarm":   {"name": "Essaim",          "desc": "+2 roquettes, dégâts −40 %.",       "weapon": "launcher", "icon": "⊞"},
-	"launcher_heavy":   {"name": "Ogive lourde",    "desc": "Dégâts ×2, rayon d'exp. ×1,5.",    "weapon": "launcher", "icon": "◆"},
-	# Flame
-	"flame_furnace":    {"name": "Fournaise",       "desc": "Dégâts +75 %, carburant ×1,5.",    "weapon": "flame",    "icon": "◆"},
-	"flame_range":      {"name": "Jet long",        "desc": "Portée +60 %.",                      "weapon": "flame",    "icon": "▶"},
+	# --- Blaster ---
+	"blaster_heavy":     {"name": "Canon lourd",    "desc": "Dégâts ×2, cadence ÷2.",                        "weapon": "blaster",  "icon": "◆", "orientation": "offensive"},
+	"blaster_gatling":   {"name": "Gatling",         "desc": "Cadence ×2, dégâts −30 %.",                     "weapon": "blaster",  "icon": "⚙", "orientation": "offensive"},
+	"blaster_excavator": {"name": "Excavateur",      "desc": "Minage ×3, dégâts −50 %.",                      "weapon": "blaster",  "icon": "⛏", "orientation": "miniere"},
+	"blaster_drill":     {"name": "Foreuse",          "desc": "Minage ×2, +1 projectile.",                     "weapon": "blaster",  "icon": "⛏", "orientation": "miniere"},
+	"blaster_scatter":   {"name": "Dispersion",       "desc": "+2 projectiles en éventail, dégâts −25 %.",     "weapon": "blaster",  "icon": "✦", "orientation": "hybride"},
+	"blaster_burst":     {"name": "Rafale",           "desc": "Combat ×1.3, minage ×1.3, cadence −33 %.",      "weapon": "blaster",  "icon": "✦", "orientation": "hybride"},
+	# --- Laser ---
+	"laser_overload":    {"name": "Surcharge",        "desc": "Dégâts +75 %, chauffe ×1,5.",                   "weapon": "laser",    "icon": "◆", "orientation": "offensive"},
+	"laser_focused":     {"name": "Focalisation",     "desc": "Dégâts +50 %, portée +30 %.",                   "weapon": "laser",    "icon": "▶", "orientation": "offensive"},
+	"laser_cutter":      {"name": "Découpeur",        "desc": "Minage ×2.5, dégâts −50 %, portée −20 %.",      "weapon": "laser",    "icon": "⛏", "orientation": "miniere"},
+	"laser_deep":        {"name": "Forage profond",   "desc": "Minage ×2, portée +50 %, dégâts −40 %.",        "weapon": "laser",    "icon": "⛏", "orientation": "miniere"},
+	"laser_sustained":   {"name": "Flux continu",     "desc": "Combat ×1.3, minage ×1.3, chauffe +30 %.",      "weapon": "laser",    "icon": "✦", "orientation": "hybride"},
+	"laser_prism":       {"name": "Prisme",           "desc": "Combat ×1.2, minage ×1.2, portée +50 %.",       "weapon": "laser",    "icon": "✦", "orientation": "hybride"},
+	# --- Launcher ---
+	"launcher_swarm":    {"name": "Essaim",           "desc": "+2 roquettes, dégâts −40 %.",                   "weapon": "launcher", "icon": "⊞", "orientation": "offensive"},
+	"launcher_heavy":    {"name": "Ogive lourde",     "desc": "Dégâts ×2, rayon d'exp. ×1,5.",               "weapon": "launcher", "icon": "◆", "orientation": "offensive"},
+	"launcher_bore":     {"name": "Foreuse",          "desc": "Minage ×2.5, dégâts −50 %.",                   "weapon": "launcher", "icon": "⛏", "orientation": "miniere"},
+	"launcher_cluster":  {"name": "Sous-munitions",   "desc": "Minage ×2, +1 roquette, rayon −30 %.",          "weapon": "launcher", "icon": "⛏", "orientation": "miniere"},
+	"launcher_napalm":   {"name": "Napalm",           "desc": "Combat ×1.2, minage ×1.2, rayon +30 %.",        "weapon": "launcher", "icon": "✦", "orientation": "hybride"},
+	"launcher_salvo":    {"name": "Salve",            "desc": "+1 roquette, combat ×0.9, minage ×0.9.",         "weapon": "launcher", "icon": "✦", "orientation": "hybride"},
+	# --- Flame ---
+	"flame_furnace":     {"name": "Fournaise",        "desc": "Dégâts +75 %, carburant ×1,5.",                 "weapon": "flame",    "icon": "◆", "orientation": "offensive"},
+	"flame_range":       {"name": "Jet long",         "desc": "Portée +60 %.",                                 "weapon": "flame",    "icon": "▶", "orientation": "offensive"},
+	"flame_acid":        {"name": "Acide",            "desc": "Minage ×2.5, dégâts −50 %.",                   "weapon": "flame",    "icon": "⛏", "orientation": "miniere"},
+	"flame_wide":        {"name": "Cône large",       "desc": "Minage ×2, angle du cône +50 %.",              "weapon": "flame",    "icon": "⛏", "orientation": "miniere"},
+	"flame_torrent":     {"name": "Torrent",          "desc": "Combat ×1.3, minage ×1.3, portée +20 %.",       "weapon": "flame",    "icon": "✦", "orientation": "hybride"},
+	"flame_inferno":     {"name": "Inferno",          "desc": "Combat ×1.5, minage ×1.3, conso +40 %.",        "weapon": "flame",    "icon": "✦", "orientation": "hybride"},
 }
 
 ## Améliorations temporaires proposées à la montée de niveau.

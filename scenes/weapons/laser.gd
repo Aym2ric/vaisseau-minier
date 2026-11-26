@@ -35,7 +35,9 @@ func _exit_tree() -> void:
 
 func update_weapon(delta: float, firing: bool) -> void:
 	var stats: Dictionary = GameData.WEAPONS["laser"]
+	var evo_top := RunState.run_evolution
 	var heat_rate := float(stats["heat_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate"))
+	if evo_top == "laser_sustained": heat_rate *= 1.3
 	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("laser_cool")) * (1.0 + 0.08 * SaveGame.skill("fire_rate_perm"))
 	if firing and not overheated:
 		heat = minf(1.0, heat + heat_rate * delta)
@@ -51,7 +53,12 @@ func update_weapon(delta: float, firing: bool) -> void:
 		var evo := RunState.run_evolution
 		var origin := muzzle()
 		var dir := Vector2.RIGHT.rotated(ship.rotation)
-		var range_mult := 1.3 if evo == "laser_focused" else 1.0
+		var range_mult := 1.0
+		match evo:
+			"laser_focused":   range_mult = 1.3
+			"laser_cutter":    range_mult = 0.8
+			"laser_deep":      range_mult = 1.5
+			"laser_prism":     range_mult = 1.5
 		var end := origin + dir * float(stats["range"]) * range_mult
 
 		var space := ship.get_world_2d().direct_space_state
@@ -64,9 +71,22 @@ func update_weapon(delta: float, firing: bool) -> void:
 			var hit_dmg: float
 			if col is Rock and (col as Rock).kind not in ["rock", "hard"]:
 				var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.15 * SaveGame.skill("mine_range")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
-				hit_dmg = float(stats["mining_damage"]) * mine_mult * RunState.ship_mining_mult * delta
+				var mine_evo := 1.0
+				match evo:
+					"laser_cutter":    mine_evo = 2.5
+					"laser_deep":      mine_evo = 2.0
+					"laser_sustained": mine_evo = 1.3
+					"laser_prism":     mine_evo = 1.2
+				hit_dmg = float(stats["mining_damage"]) * mine_mult * mine_evo * RunState.ship_mining_mult * delta
 			else:
-				var dmg_evo := 1.75 if evo == "laser_overload" else (1.5 if evo == "laser_focused" else 1.0)
+				var dmg_evo := 1.0
+			match evo:
+				"laser_overload":  dmg_evo = 1.75
+				"laser_focused":   dmg_evo = 1.5
+				"laser_cutter":    dmg_evo = 0.5
+				"laser_deep":      dmg_evo = 0.6
+				"laser_sustained": dmg_evo = 1.3
+				"laser_prism":     dmg_evo = 1.2
 				hit_dmg = float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo * RunState.ship_combat_mult * delta
 			col.take_hit(hit_dmg)
 
