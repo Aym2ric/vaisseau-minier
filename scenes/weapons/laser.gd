@@ -48,9 +48,11 @@ func update_weapon(delta: float, firing: bool) -> void:
 
 	var active := firing and not overheated
 	if active:
+		var evo := RunState.run_evolution
 		var origin := muzzle()
 		var dir := Vector2.RIGHT.rotated(ship.rotation)
-		var end := origin + dir * float(stats["range"])
+		var range_mult := 1.3 if evo == "laser_focused" else 1.0
+		var end := origin + dir * float(stats["range"]) * range_mult
 
 		var space := ship.get_world_2d().direct_space_state
 		var query := PhysicsRayQueryParameters2D.create(origin, end, GameData.LAYER_ENEMIES | GameData.LAYER_ROCKS)
@@ -58,7 +60,8 @@ func update_weapon(delta: float, firing: bool) -> void:
 		var hit := space.intersect_ray(query)
 		var beam_end: Vector2 = hit["position"] if hit else end
 		if hit and hit["collider"].has_method("take_hit"):
-			var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg"))
+			var dmg_evo := 1.75 if evo == "laser_overload" else (1.5 if evo == "laser_focused" else 1.0)
+			var damage := float(stats["damage"]) * (1.0 + 0.2 * SaveGame.skill("laser_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
 			hit["collider"].take_hit(damage * delta)
 
 		var core_color := Color("5bdfff").lerp(Color("ff5a5f"), heat)

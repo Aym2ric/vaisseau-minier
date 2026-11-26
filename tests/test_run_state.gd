@@ -1,4 +1,4 @@
-## Tests de la logique de RunState — GDD V3 : mission, extraction, coque, XP, upgrades.
+## Tests de la logique de RunState — GDD V4 : mission, extraction, coque, XP, upgrades, évolutions.
 ## Chaque test remet l'etat a zero via _reset() pour eviter les effets de bord.
 extends RefCounted
 
@@ -18,6 +18,8 @@ func _reset() -> void:
 	RunState.mission_complete = false
 	RunState.extract_progress = 0.0
 	RunState.is_mining       = false
+	RunState.weapon_upgrades = 0
+	RunState.run_evolution   = ""
 	RunState.xp              = 0
 	RunState.level           = 0
 	RunState.xp_to_next      = 20
@@ -321,3 +323,71 @@ func test_end_run_summary_has_required_keys() -> bool:
 			push_error("summary manque la cle : %s" % key)
 			return false
 	return true
+
+
+# --- Évolution d'arme ---
+
+func test_weapon_upgrades_start_at_zero() -> bool:
+	_reset()
+	return RunState.weapon_upgrades == 0
+
+
+func test_weapon_upgrades_counts_rate_dmg_multi() -> bool:
+	_reset()
+	SaveGame.data["equipped"] = {"weapon": "blaster"}
+	RunState.apply_upgrade("rate")
+	RunState.apply_upgrade("dmg")
+	return RunState.weapon_upgrades == 2
+
+
+func test_weapon_upgrades_ignores_non_weapon_upgrades() -> bool:
+	_reset()
+	RunState.apply_upgrade("speed")
+	RunState.apply_upgrade("armor")
+	RunState.apply_upgrade("magnet")
+	return RunState.weapon_upgrades == 0
+
+
+func test_evolution_triggered_at_threshold() -> bool:
+	_reset()
+	SaveGame.data["equipped"] = {"weapon": "blaster"}
+	var flag := [false]
+	RunState.evolution_available.connect(func(_c: Array) -> void: flag[0] = true, CONNECT_ONE_SHOT)
+	for _i in GameData.EVOLUTION_THRESHOLD:
+		RunState.apply_upgrade("dmg")
+	return flag[0]
+
+
+func test_evolution_not_triggered_before_threshold() -> bool:
+	_reset()
+	SaveGame.data["equipped"] = {"weapon": "blaster"}
+	var flag := [false]
+	RunState.evolution_available.connect(func(_c: Array) -> void: flag[0] = true, CONNECT_ONE_SHOT)
+	for _i in GameData.EVOLUTION_THRESHOLD - 1:
+		RunState.apply_upgrade("dmg")
+	return not flag[0]
+
+
+func test_evolution_not_triggered_twice() -> bool:
+	_reset()
+	SaveGame.data["equipped"] = {"weapon": "blaster"}
+	RunState.apply_evolution("blaster_heavy")
+	var flag := [false]
+	RunState.evolution_available.connect(func(_c: Array) -> void: flag[0] = true, CONNECT_ONE_SHOT)
+	for _i in GameData.EVOLUTION_THRESHOLD + 2:
+		RunState.apply_upgrade("dmg")
+	return not flag[0]
+
+
+func test_apply_evolution_sets_run_evolution() -> bool:
+	_reset()
+	RunState.apply_evolution("blaster_gatling")
+	return RunState.run_evolution == "blaster_gatling"
+
+
+func test_start_run_resets_evolution() -> bool:
+	_reset()
+	RunState.run_evolution = "blaster_heavy"
+	RunState.weapon_upgrades = 5
+	RunState.start_run("roc", 1)
+	return RunState.run_evolution == "" and RunState.weapon_upgrades == 0

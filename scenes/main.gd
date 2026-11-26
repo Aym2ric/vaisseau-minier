@@ -12,6 +12,7 @@ func _ready() -> void:
 	RunState.run_failed.connect(_on_run_failed)
 	RunState.resource_discovered.connect(_on_resource_discovered)
 	RunState.leveled_up.connect(_on_leveled_up)
+	RunState.evolution_available.connect(_on_evolution_available)
 	_show_hub()
 
 
@@ -100,6 +101,35 @@ func _pick_upgrade(id: String) -> void:
 	RunState.apply_upgrade(id)
 	hud.hide_panel()
 	get_tree().paused = false
+
+
+# --- Évolution d'arme -------------------------------------------------------
+
+func _on_evolution_available(choices: Array) -> void:
+	if not RunState.active:
+		return
+	_show_evolution_panel.call_deferred(choices)
+
+
+func _show_evolution_panel(choices: Array) -> void:
+	get_tree().paused = true
+	var options: Array = []
+	for evo_id in choices:
+		var def: Dictionary = GameData.RUN_EVOLUTIONS[evo_id]
+		var captured: String = evo_id
+		options.append([
+			"%s — %s" % [def["name"], def["desc"]],
+			func() -> void: _pick_evolution(captured),
+			Color("1a2a0a"),
+		])
+	hud.show_panel("Évolution disponible !", "Ton arme peut évoluer pour le reste de l'expédition.", options)
+
+
+func _pick_evolution(id: String) -> void:
+	RunState.apply_evolution(id)
+	hud.hide_panel()
+	get_tree().paused = false
+	hud.announce("Évolution : %s !" % GameData.RUN_EVOLUTIONS[id]["name"])
 
 
 # --- Divers ---------------------------------------------------------------

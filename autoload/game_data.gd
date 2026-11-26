@@ -96,6 +96,25 @@ const WEAPONS := {
 				 "range": 160.0, "angle": 50.0, "fuel_rate": 0.65, "cool_rate": 0.9},
 }
 
+## Nombre d'upgrades arme (rate/multi/dmg) pour déclencher une évolution.
+const EVOLUTION_THRESHOLD := 3
+
+## Évolutions d'arme disponibles en run (déclenchées au seuil).
+const RUN_EVOLUTIONS := {
+	# Blaster
+	"blaster_heavy":    {"name": "Canon lourd",    "desc": "Dégâts ×2, cadence ÷2.",            "weapon": "blaster",  "icon": "◆"},
+	"blaster_gatling":  {"name": "Gatling",         "desc": "Cadence ×2, dégâts −30 %.",         "weapon": "blaster",  "icon": "⚙"},
+	# Laser
+	"laser_overload":   {"name": "Surcharge",       "desc": "Dégâts +75 %, chauffe ×1,5.",       "weapon": "laser",    "icon": "◆"},
+	"laser_focused":    {"name": "Focalisation",    "desc": "Dégâts +50 %, portée +30 %.",       "weapon": "laser",    "icon": "▶"},
+	# Launcher
+	"launcher_swarm":   {"name": "Essaim",          "desc": "+2 roquettes, dégâts −40 %.",       "weapon": "launcher", "icon": "⊞"},
+	"launcher_heavy":   {"name": "Ogive lourde",    "desc": "Dégâts ×2, rayon d'exp. ×1,5.",    "weapon": "launcher", "icon": "◆"},
+	# Flame
+	"flame_furnace":    {"name": "Fournaise",       "desc": "Dégâts +75 %, carburant ×1,5.",    "weapon": "flame",    "icon": "◆"},
+	"flame_range":      {"name": "Jet long",        "desc": "Portée +60 %.",                      "weapon": "flame",    "icon": "▶"},
+}
+
 ## Améliorations temporaires proposées à la montée de niveau.
 const RUN_UPGRADES := {
 	"repair": {"name": "Réparation rapide",    "desc": "Restaure 20 PV."},

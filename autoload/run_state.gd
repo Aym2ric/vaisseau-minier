@@ -1,6 +1,6 @@
 extends Node
-## État de la run en cours — GDD V3.
-## Carte unique par expédition, menace temporelle, mission, extraction volontaire.
+## État de la run en cours — GDD V4.
+## Carte unique par expédition, menace temporelle, mission, extraction volontaire, évolutions d'arme.
 ## La sauvegarde n'est modifiée qu'à la fin de la run (end_run).
 
 signal hull_changed(hull: float, max_hull: float)
@@ -10,6 +10,7 @@ signal resource_discovered(id: String)
 signal leveled_up(level: int, choices: Array)
 signal mission_updated(progress: int, target: int)
 signal mission_completed
+signal evolution_available(choices: Array)
 
 var active        := false
 var planet_id     := "roc"
@@ -33,6 +34,8 @@ var level           := 0
 var xp_to_next      := 20
 var run_upgrades: Dictionary = {}
 var rerolls         := 0
+var weapon_upgrades := 0        # upgrades arme choisis ce run (rate/multi/dmg)
+var run_evolution   := ""       # id de l'évolution choisie ("" = aucune)
 var _started_ms     := 0
 
 
@@ -51,8 +54,10 @@ func start_run(id: String, diff: int = 1) -> void:
 	xp           = 0
 	level        = 0
 	xp_to_next   = 20
-	run_upgrades = {}
-	rerolls      = SaveGame.skill("reroll")
+	run_upgrades    = {}
+	rerolls         = SaveGame.skill("reroll")
+	weapon_upgrades = 0
+	run_evolution   = ""
 	mission_type     = "eliminate"
 	mission_target   = 5 + difficulty * 5   # 10 / 15 / 20 / 25 / 30
 	mission_progress = 0
@@ -143,6 +148,11 @@ func run_upgrade_level(id: String) -> int:
 
 func apply_upgrade(id: String) -> void:
 	run_upgrades[id] = run_upgrade_level(id) + 1
+	# Suivi des upgrades d'arme pour déclencher l'évolution
+	if id in ["rate", "multi", "dmg"] and run_evolution == "":
+		weapon_upgrades += 1
+		if weapon_upgrades >= GameData.EVOLUTION_THRESHOLD:
+			_trigger_evolution()
 	match id:
 		"repair":
 			heal(20.0)
@@ -150,6 +160,21 @@ func apply_upgrade(id: String) -> void:
 			max_hull += 20.0
 			hull = minf(hull + 20.0, max_hull)
 			hull_changed.emit(hull, max_hull)
+
+
+func _trigger_evolution() -> void:
+	var weapon_id := String(SaveGame.data.get("equipped", {}).get("weapon", "blaster"))
+	var pool: Array = []
+	for evo_id in GameData.RUN_EVOLUTIONS:
+		var evo: Dictionary = GameData.RUN_EVOLUTIONS[evo_id]
+		if String(evo["weapon"]) == weapon_id:
+			pool.append(evo_id)
+	if pool.size() > 0:
+		evolution_available.emit(pool)
+
+
+func apply_evolution(id: String) -> void:
+	run_evolution = id
 
 
 func _pick_upgrades(count: int) -> Array:

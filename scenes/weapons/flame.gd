@@ -15,8 +15,10 @@ func update_weapon(delta: float, firing: bool) -> void:
 	var fuel_rate := float(stats["fuel_rate"]) * maxf(0.3, 1.0 - 0.15 * RunState.run_upgrade_level("rate"))
 	var cool_rate := float(stats["cool_rate"]) * (1.0 + 0.15 * SaveGame.skill("flame_fuel"))
 
+	var evo := RunState.run_evolution
+	var fuel_mult := 1.5 if evo == "flame_furnace" else 1.0
 	if firing and not overheated:
-		heat = minf(1.0, heat + fuel_rate * delta)
+		heat = minf(1.0, heat + fuel_rate * fuel_mult * delta)
 		if heat >= 1.0:
 			overheated = true
 	else:
@@ -31,7 +33,8 @@ func update_weapon(delta: float, firing: bool) -> void:
 
 
 func _apply_damage(delta: float, stats: Dictionary) -> void:
-	var range_val := float(stats["range"])
+	var evo := RunState.run_evolution
+	var range_val := float(stats["range"]) * (1.6 if evo == "flame_range" else 1.0)
 	var half_angle := deg_to_rad(float(stats["angle"]) / 2.0)
 	var origin := muzzle()
 	var dir := Vector2.RIGHT.rotated(ship.rotation)
@@ -47,7 +50,8 @@ func _apply_damage(delta: float, stats: Dictionary) -> void:
 	q.collide_with_bodies = true
 
 	var base_dmg := float(stats["damage"])
-	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("flame_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg"))
+	var dmg_evo := 1.75 if evo == "flame_furnace" else 1.0
+	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("flame_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
 
 	for result in space.intersect_shape(q, 16):
 		var col: Node2D = result["collider"]
