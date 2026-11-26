@@ -176,7 +176,7 @@ func _update_extraction(delta: float) -> void:
 		_extracting = true
 		_extract_timer = 0.0
 		announced.emit("Extraction en cours… (TAB pour annuler)")
-	if _extracting:
+	elif _extracting:
 		if Input.is_action_just_pressed("extract") or Input.is_action_just_pressed("dash"):
 			_cancel_extraction("Extraction annulée.")
 			return
