@@ -18,6 +18,7 @@ func update_weapon(delta: float, firing: bool) -> void:
 	cooldown = float(stats["cooldown"]) * maxf(0.3, 1.0 - 0.2 * RunState.run_upgrade_level("rate") - 0.08 * SaveGame.skill("fire_rate_perm"))
 	var dmg_evo := 0.6 if evo == "launcher_swarm" else (2.0 if evo == "launcher_heavy" else 1.0)
 	var dmg_mult := (1.0 + 0.2 * SaveGame.skill("launcher_dmg")) * (1.0 + 0.25 * RunState.run_upgrade_level("dmg")) * dmg_evo
+	var mine_mult := (1.0 + 0.2 * SaveGame.skill("mine_speed")) * (1.0 + 0.4 * RunState.run_upgrade_level("mine"))
 	var extra := 2 if evo == "launcher_swarm" else 0
 	var count := 1 + RunState.run_upgrade_level("multi") + extra
 	var radius_mult := 1.5 if evo == "launcher_heavy" else 1.0
@@ -27,6 +28,7 @@ func update_weapon(delta: float, firing: bool) -> void:
 		rocket.position = muzzle()
 		rocket.rotation = ship.rotation + angle_offset
 		rocket.damage = float(stats["damage"]) * dmg_mult
+		rocket.mining_damage = float(stats["mining_damage"]) * mine_mult
 		rocket.explosion_radius = float(stats["explosion_radius"]) * radius_mult
 		rocket.explosion_damage = float(stats["explosion_damage"]) * dmg_mult * (1.0 + 0.2 * SaveGame.skill("explosion_dmg"))
 		rocket.speed = float(stats["speed"])

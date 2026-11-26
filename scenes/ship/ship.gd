@@ -129,11 +129,15 @@ func _nearest_target() -> Vector2:
 	var nearest_dist := INF
 	for result in space.intersect_shape(q, 32):
 		var col: Node2D = result["collider"]
-		if is_instance_valid(col):
-			var d := global_position.distance_to(col.global_position)
-			if d < nearest_dist:
-				nearest_dist = d
-				nearest = col.global_position
+		if not is_instance_valid(col):
+			continue
+		# Exclure les murs friables (rock/hard) — cibler seulement ennemis + gisements minables
+		if col is Rock and not (col as Rock).is_mineable():
+			continue
+		var d := global_position.distance_to(col.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = col.global_position
 	return nearest
 
 
